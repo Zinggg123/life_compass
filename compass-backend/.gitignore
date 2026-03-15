@@ -31,3 +31,29 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### ADD ###
+logs/
+log/
+*.log
+
+application.properties
+application.yaml
+
+*.jar
+*.war
+*.ear
+
+.DS_Store
+*.tmp
+*.bak
+*.swp
+*.orig
+
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-policy.xml
+
+out/

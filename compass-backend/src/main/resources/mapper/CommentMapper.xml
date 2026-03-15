@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zing.compass.mapper.CommentMapper">
+    <insert id="insertComment">
+        INSERT INTO comment (comment_id, user_id, biz_id, score, content, timestamp)
+        VALUES (#{commentId}, #{userId}, #{bizId}, #{score}, #{content}, #{timestamp})
+    </insert>
+
+    <select id="selectCommentsByBizId" resultType="com.zing.compass.entity.Comment">
+        SELECT * FROM comment
+        WHERE biz_id = #{bizId}
+        ORDER BY timestamp DESC
+    </select>
+
+    <select id="selectCommentsByUserId" resultType="com.zing.compass.entity.Comment">
+        SELECT * FROM comment
+        WHERE user_id = #{userId}
+        ORDER BY timestamp DESC
+    </select>
+</mapper>

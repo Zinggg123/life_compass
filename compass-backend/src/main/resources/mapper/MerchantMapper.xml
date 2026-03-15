@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zing.compass.mapper.MerchantMapper">
+    <select id="selectMerchantById" resultType="com.zing.compass.entity.Merchant">
+        SELECT merchant_id, name, email, phone, biz_id, yelping_since
+        FROM merchant
+        WHERE merchant_id = #{merchantId}
+    </select>
+
+    <insert id="insertMerchant">
+        INSERT INTO merchant (merchant_id, name, email, phone, biz_id, yelping_since)
+        VALUES (#{merchantId}, #{name}, #{email}, #{phone}, #{bizId}, #{yelpingSince})
+    </insert>
+</mapper>

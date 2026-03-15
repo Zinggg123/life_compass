@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zing.compass.mapper.UserCouponMapper">
+    <select id="selectByUserIdAndCouponId" resultType="com.zing.compass.entity.UserCoupon">
+        SELECT * FROM user_coupon
+        WHERE user_id = #{userId} AND coupon_id = #{couponId}
+    </select>
+
+    <insert id="insertUserCoupon">
+        INSERT INTO user_coupon (grab_id, user_id, coupon_id, get_time)
+        VALUES (#{grabId}, #{userId}, #{couponId}, #{getTime})
+    </insert>
+
+    <delete id="deleteUserCoupon">
+        DELETE FROM user_coupon
+        WHERE user_id = #{userId} AND coupon_id = #{couponId}
+    </delete>
+
+    <select id="selectCouponsByUserId" resultType="com.zing.compass.entity.UserCoupon">
+        SELECT * FROM user_coupon
+        WHERE user_id = #{userId}
+    </select>
+
+    <update id="updateUserCouponStatus">
+        UPDATE user_coupon
+        SET status = #{status}
+        WHERE user_coupon_id = #{userCouponId} AND status = false
+    </update>
+</mapper>

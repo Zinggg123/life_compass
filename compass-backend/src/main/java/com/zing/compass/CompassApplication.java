@@ -1,11 +1,13 @@
 package com.zing.compass;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
-//暂时不需要数据库
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+
+@SpringBootApplication
+@MapperScan("com.zing.compass.mapper")
 public class CompassApplication {
 
     public static void main(String[] args) {

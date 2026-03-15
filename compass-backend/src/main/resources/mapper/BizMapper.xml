@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zing.compass.mapper.BizMapper">
+    <select id="selectBusinessesByIds" resultType="com.zing.compass.entity.Business">
+        SELECT * FROM business WHERE biz_id IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectBusinessById" resultType="com.zing.compass.entity.Business">
+        SELECT * FROM business WHERE biz_id = #{bizId}
+    </select>
+</mapper>

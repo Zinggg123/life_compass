@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zing.compass.mapper.CouponMapper">
+    <select id="selectCouponById" resultType="com.zing.compass.entity.Coupon">
+        SELECT * FROM coupon
+        WHERE coupon_id = #{couponId}
+    </select>
+
+    <update id="updateCouponStatus">
+        UPDATE coupon
+        SET status = #{status}
+        WHERE coupon_id = #{couponId}
+    </update>
+
+    <select id="selectCouponsByBizId" resultType="com.zing.compass.entity.Coupon">
+        SELECT * FROM coupon
+        WHERE biz_id = #{bizId}
+    </select>
+
+    <insert id="insertCoupon">
+        INSERT INTO coupon (coupon_id, biz_id, name, description, discount_amount, threshold_amount, valid_from, valid_to, total_quantity, available_quantity, status, create_time)
+        VALUES (#{couponId}, #{bizId}, #{name}, #{description}, #{discountAmount}, #{thresholdAmount}, #{validFrom}, #{validTo}, #{totalQuantity}, #{availableQuantity}, #{status}, #{createTime})
+    </insert>
+</mapper>
