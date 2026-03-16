@@ -1,0 +1,80 @@
+# ======== 环境 ========
+use_gpu: False #服务器上是True
+# gpu_id: 0
+# workers: 6
+seed: 2024
+# prefetch_factor: 12
+# pin_memory: True
+enable_amp: False
+enable_scaler: False
+
+# ======== 数据集 ========
+dataset: yelp2018
+data_path: F:\bishe\rec_system\dataset  #更改为本机路径
+checkpoint_dir: F:\bishe\rec_system\artifact
+
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: item_id
+TIME_FIELD: timestamp
+RATING_FIELD: rating
+
+load_col:
+  inter: [user_id, item_id, rating, timestamp]
+  
+# val_interval:
+#     rating: "[3,inf)"  
+user_inter_num_interval: "[10,inf)" 
+item_inter_num_interval: "[10,inf)"
+
+MAX_ITEM_LIST_LENGTH: 30
+
+
+# ======== 模型配置 ========
+model: SASRec
+embedding_size: 256
+train_neg_sample_args: ~
+reg_weight: 0.01
+
+n_layers: 2                     # (int) The number of transformer layers in transformer encoder.
+n_heads: 4 #原2                      # (int) The number of attention heads for multi-head attention layer.
+hidden_size: 256 #原64                 # (int) The number of features in the hidden state.
+inner_size: 1024 #原256                 # (int) The inner hidden size in feed-forward layer.
+hidden_dropout_prob: 0.5        # (float) The probability of an element to be zeroed.
+attn_dropout_prob: 0.5          # (float) The probability of an attention score to be zeroed.
+hidden_act: 'gelu'              # (str) The activation function in feed-forward layer.
+layer_norm_eps: 1e-12           # (float) A value added to the denominator for numerical stability. 
+initializer_range: 0.02         # (float) The standard deviation for normal initialization.
+loss_type: 'CE'                 # (str) The type of loss function. Range in ['BPR', 'CE'].
+
+
+
+
+# ======== 训练通用 ========
+epochs: 300
+train_batch_size: 256
+learner: adam
+learning_rate: 0.001
+eval_step: 1
+stopping_step: 50
+
+
+# ======== 评估 ========
+eval_args:
+  group_by: user
+  order: TO
+  split: {'LS': 'valid_and_test'}
+  mode: 
+    valid: 'full'
+    test: 'full'
+repeatable: True
+metrics: ['Recall', 'NDCG', 'Precision', 'MRR']
+topk: [10, 20]
+valid_metric: NDCG@10
+eval_batch_size: 1024
+
+
+# ======== 日志与保存 ========
+show_progress: True
+verbose: 1
+save_dataset: False
+
