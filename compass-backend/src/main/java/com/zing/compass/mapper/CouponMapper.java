@@ -14,4 +14,5 @@ public interface CouponMapper {
     List<Coupon> selectCouponsByBizId(String bizId);
 
     boolean insertCoupon(Coupon coupon);
+
 }

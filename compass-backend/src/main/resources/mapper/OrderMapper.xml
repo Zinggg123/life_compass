@@ -6,4 +6,12 @@
         INSERT INTO order_info (order_id, user_id, coupon_id, order_time, total_amount, amount_paid)
         VALUES (#{orderId}, #{userId}, #{couponId}, #{orderTime}, #{amount}, #{amountPaid})
     </insert>
+
+    <select id="selectRecentOrderBiz" resultType="com.zing.compass.entity.UserBehavior">
+        SELECT biz_id AS bizId, 1 AS behaviorType, UNIX_TIMESTAMP(order_time) * 1000 AS timestamp
+        FROM order_info
+        WHERE user_id = #{userId}
+        ORDER BY order_time DESC
+        LIMIT #{limit}
+    </select>
 </mapper>

@@ -11,6 +11,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RecommendRequest {
-    private String userId;
-    private List<String> userBehavior; //用户行为数据
+    private String user_id;
+    private List<String> history_items;
 }

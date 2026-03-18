@@ -1,7 +1,7 @@
 import numpy as np
 
 class SimpleRanker:
-    def __init__(self, weights=None, final_top_k=10):
+    def __init__(self, weights=None, final_top_k=100):
         # 权重：{'LightGCN': 0.5, 'SASRec': 0.5}
         self.weights = weights or {'LightGCN': 0.5, 'SASRec': 0.5}
         self.final_top_k = final_top_k

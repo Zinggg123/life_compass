@@ -11,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RecommendResponse {
-    private String userId;
-    private List<String> recommendedBusinessIds; //推荐的商户ID列表
+    private String user_id;
+    private List<String> recommendations; //推荐的商户ID列表
+    private List<Float> scores; //分数
 }

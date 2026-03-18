@@ -18,4 +18,12 @@
         WHERE user_id = #{userId}
         ORDER BY timestamp DESC
     </select>
+
+    <select id="selectRecentCommentBiz" resultType="com.zing.compass.entity.UserBehavior">
+        SELECT biz_id AS bizId, 0 AS behaviorType, UNIX_TIMESTAMP(timestamp) * 1000 AS timestamp
+        FROM comment
+        WHERE user_id = #{userId}
+        ORDER BY timestamp DESC
+        LIMIT #{limit}
+    </select>
 </mapper>

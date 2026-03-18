@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zing.compass.mapper.UserBehaviorMapper">
-    <select id="selectRecentBehavior" resultType="java.lang.String">
-        SELECT merchant_id FROM user_behavior
-        WHERE user_id = #{userId}
-        ORDER BY create_time DESC
+    <select id="selectRecentCommentBehavior" resultType="java.lang.String">
+        SELECT biz_id FROM user_behavior
+        WHERE user_id = #{userId} AND behavior_type = 2
+        ORDER BY timestamp DESC
             LIMIT #{limit}
     </select>
 </mapper>

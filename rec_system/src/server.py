@@ -44,16 +44,17 @@ engine = RecallEngine(
     lgcn_wrapper, sasrec_wrapper,
     os.path.join(ARTIFACTS_DIR, "lightgcn_faiss.index"),
     os.path.join(ARTIFACTS_DIR, "sasrec_faiss.index"),
-    top_k=50
+    top_k=100
 )
 
 # 4. 初始化排序器
-ranker = SimpleRanker(weights={'LightGCN': 0.4, 'SASRec': 0.6}, final_top_k=10)
+ranker = SimpleRanker(weights={'LightGCN': 0.4, 'SASRec': 0.6}, final_top_k=100)
 
 # --- Request Model ---
 class RecRequest(BaseModel):
     user_id: str
     history_items: List[str] # 按时间顺序
+    top_k: int = 100
 
 class RecResponse(BaseModel):
     user_id: str
@@ -63,6 +64,8 @@ class RecResponse(BaseModel):
 @app.post("/recommend", response_model=RecResponse)
 async def recommend(req: RecRequest):
     # 1. 数据预处理
+    req.history_items.reverse() #逆序
+
     # LightGCN 输入
     u_idx_lgcn, input_lgcn = processor.get_user_vector_input("LightGCN", req.user_id, req.history_items)
     # SASRec 输入
@@ -87,6 +90,8 @@ async def recommend(req: RecRequest):
     
     # 5. ID 转 Token
     final_tokens = processor.map_item_ids_to_tokens(final_ids)
+
+    print("final_tokens:", final_tokens)
 
     return RecResponse(
         user_id=req.user_id,

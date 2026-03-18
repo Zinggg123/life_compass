@@ -1,6 +1,7 @@
 package com.zing.compass.mapper;
 
 import com.zing.compass.entity.Comment;
+import com.zing.compass.entity.UserBehavior;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -12,4 +13,6 @@ public interface CommentMapper {
     List<Comment> selectCommentsByBizId(String bizId);
 
     List<Comment> selectCommentsByUserId(String userId);
+
+    List<UserBehavior> selectRecentCommentBiz(String userId, int limit);
 }

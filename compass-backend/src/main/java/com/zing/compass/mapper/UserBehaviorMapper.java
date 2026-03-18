@@ -8,8 +8,5 @@ import java.util.List;
 
 @Mapper
 public interface UserBehaviorMapper {
-    List<String> selectRecentBehavior(
-            @Param("userId") String userId,
-            @Param("limit") int limit
-    );
+    List<String> selectRecentCommentBehavior(String userId, int limit);
 }

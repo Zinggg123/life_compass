@@ -27,4 +27,11 @@
         SET status = #{status}
         WHERE user_coupon_id = #{userCouponId} AND status = false
     </update>
+
+    <select id="selectRecentCouponBiz" resultType="com.zing.compass.entity.UserBehavior">
+        SELECT biz_id AS bizId, 2 AS behaviorType, UNIX_TIMESTAMP(get_time) * 1000 AS timestamp FROM user_coupon
+        WHERE user_id = #{userId}
+        ORDER BY get_time DESC
+        LIMIT #{limit}
+    </select>
 </mapper>

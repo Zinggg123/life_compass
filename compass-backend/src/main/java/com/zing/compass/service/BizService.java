@@ -2,6 +2,7 @@ package com.zing.compass.service;
 
 import com.alibaba.fastjson2.JSON;
 import com.zing.compass.entity.Business;
+import com.zing.compass.entity.SimpleBusiness;
 import com.zing.compass.entity.User;
 import com.zing.compass.mapper.BizMapper;
 import jakarta.annotation.Resource;
@@ -19,13 +20,9 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class BizService {
-    @Resource
-    private BizMapper bizMapper;
-
+    private final BizMapper bizMapper;
 
     private final StringRedisTemplate redisTemplate;
-
-
 
     /**
      * 根据店铺ID列表查询店铺详情
@@ -60,6 +57,47 @@ public class BizService {
         //3. 回写到Redis
         for(Business biz : dbBizs){
             String key = "biz:info:" + biz.getBizId();
+            redisTemplate.opsForValue().set(key, JSON.toJSONString(biz), 24, TimeUnit.HOURS);
+        }
+
+        bizs.addAll(dbBizs);
+
+        return bizs;
+    }
+
+    /**
+     * 根据店铺ID列表查询店铺详情
+     * Redis -> MySQL -> 回写
+     */
+    public List<SimpleBusiness> getSimpleBusinessesByIds(List<String> bizIds) {
+        if(bizIds == null || bizIds.isEmpty()){
+            return Collections.emptyList();
+        }
+
+        List<SimpleBusiness> bizs = new ArrayList<>();
+        List<String> missedBids = new ArrayList<>();
+
+        //1. Redis
+        for(String id:bizIds){
+            String key = "biz:simpleinfo:" + id;
+            String str = redisTemplate.opsForValue().get(key);
+            if(str!=null && !str.isEmpty()){
+                bizs.add(JSON.parseObject(str, SimpleBusiness.class));
+            } else {
+                missedBids.add(id);
+            }
+        }
+
+        if(missedBids.isEmpty()){
+            return bizs;
+        }
+
+        //2. MySQL
+        List<SimpleBusiness> dbBizs = bizMapper.selectSimpleBusinessesByIds(missedBids);
+
+        //3. 回写到Redis
+        for(SimpleBusiness biz : dbBizs){
+            String key = "biz:simpleinfo:" + biz.getBizId();
             redisTemplate.opsForValue().set(key, JSON.toJSONString(biz), 24, TimeUnit.HOURS);
         }
 

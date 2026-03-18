@@ -1,6 +1,7 @@
 package com.zing.compass.mapper;
 
 import com.zing.compass.entity.Coupon;
+import com.zing.compass.entity.UserBehavior;
 import com.zing.compass.entity.UserCoupon;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -18,4 +19,7 @@ public interface UserCouponMapper {
     List<UserCoupon> selectCouponsByUserId(String userId);
 
     boolean updateUserCouponStatus(String userCouponId, Boolean status);
+
+    List<UserBehavior> selectRecentCouponBiz(String userId, Integer limit);
+
 }
