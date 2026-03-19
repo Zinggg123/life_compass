@@ -1,5 +1,6 @@
 package com.zing.compass.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,8 +12,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
+    @JsonProperty("user_id")
     private String userId;
     private String name;
+    private String password;
     private int reviewCount;
     private int fans; // 粉丝数
     private int elite; // 精英会员等级

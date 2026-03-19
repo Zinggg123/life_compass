@@ -8,7 +8,7 @@
     </select>
 
     <insert id="insertUser">
-        INSERT INTO user (user_id, name)
-        VALUES (#{userId}, #{name})
+        INSERT INTO user (user_id, name, password, yelping_since, review_count, fans, elite)
+        VALUES (#{userId}, #{name}, #{password}, #{yelpingSince}, #{reviewCount}, #{fans}, #{elite})
     </insert>
 </mapper>

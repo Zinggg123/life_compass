@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RecommendRequest {
     @JsonProperty("user_id")
-    String userId;
+    String userId; //已弃用
     @JsonProperty("page_id")
     Integer pageId;
 }

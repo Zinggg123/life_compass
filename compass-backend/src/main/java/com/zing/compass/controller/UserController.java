@@ -5,14 +5,17 @@ import com.zing.compass.entity.User;
 import com.zing.compass.entity.UserCoupon;
 import com.zing.compass.service.CouponService;
 import com.zing.compass.service.UserService;
+import com.zing.compass.vo.LoginRequest;
 import com.zing.compass.vo.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/user")
@@ -25,17 +28,17 @@ public class UserController {
     private CouponService couponService;
 
     @PostMapping("/login")
-    public Result login(String userId) {
+    public Result login(@RequestBody LoginRequest req) {
         try {
-            User user = userService.login(userId);
-            return Result.success(user);
+            Map<String, Object> data = userService.login(req.getUserId(), req.getPassword());
+            return Result.success(data);
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());
         }
     }
 
     @PostMapping("/register")
-    public Result register(User user) {
+    public Result register(@RequestBody User user) {
         try {
             User newUser = userService.register(user);
             return Result.success(newUser);

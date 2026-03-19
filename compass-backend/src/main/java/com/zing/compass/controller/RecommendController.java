@@ -15,6 +15,6 @@ public class RecommendController {
     @PostMapping("/recommend")
     public Result recommend(@RequestBody RecommendRequest request) {
         System.out.println(request.toString());
-        return Result.success(recommendationService.recommend(request.getUserId()));
+        return Result.success(recommendationService.recommend(request.getPageId()));
     }
 }
