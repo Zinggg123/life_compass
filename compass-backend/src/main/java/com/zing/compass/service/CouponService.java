@@ -5,6 +5,7 @@ import com.zing.compass.entity.Coupon;
 import com.zing.compass.entity.OrderInfo;
 import com.zing.compass.entity.UserBehavior;
 import com.zing.compass.entity.UserCoupon;
+import com.zing.compass.mapper.BizMapper;
 import com.zing.compass.mapper.CouponMapper;
 import com.zing.compass.mapper.OrderMapper;
 import com.zing.compass.mapper.UserCouponMapper;
@@ -27,6 +28,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +37,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +50,7 @@ public class CouponService {
 
     private final CouponMapper couponMapper;
     private final UserCouponMapper userCouponMapper;
+    private final BizMapper bizMapper;
 
     private static final DefaultRedisScript<Long> SECKILL_SCRIPT;
     static {
@@ -67,6 +71,11 @@ public class CouponService {
         Coupon coupon = couponMapper.selectCouponById(couponId);
         if(coupon != null) {
             redisTemplate.opsForValue().set("seckill:stock:" + couponId, String.valueOf(coupon.getAvailableQuantity()));
+            // Save start and end time for Lua validation
+            long start = coupon.getValidFrom().toEpochSecond(ZoneOffset.of("+8")); //转成时间戳，东八区
+            long end = coupon.getValidTo().toEpochSecond(ZoneOffset.of("+8"));
+            redisTemplate.opsForValue().set("seckill:startTime:" + couponId, String.valueOf(start));
+            redisTemplate.opsForValue().set("seckill:endTime:" + couponId, String.valueOf(end));
         }
     }
 
@@ -74,12 +83,15 @@ public class CouponService {
     public boolean grabCoupon(String userId, String couponId) {
         // 1.生成订单ID
         long orderId = redisIdWorker.nextId("order");
+        
+        // Current timestamp for Lua
+        long now = LocalDateTime.now().toEpochSecond(ZoneOffset.of("+8"));
 
         // 2.执行Lua脚本
         Long result = redisTemplate.execute(
                 SECKILL_SCRIPT,
                 Collections.emptyList(),
-                couponId, userId, String.valueOf(orderId)
+                couponId, userId, String.valueOf(orderId), String.valueOf(now)
         );
 
         int r = result.intValue();
@@ -88,6 +100,10 @@ public class CouponService {
             throw new RuntimeException("库存不足");
         } else if(r == 2){
             throw new RuntimeException("每人限领一张");
+        } else if(r == 3){
+            throw new RuntimeException("活动未开始");
+        } else if(r == 4){
+            throw new RuntimeException("活动已结束");
         }
 
         // 4.返回成功
@@ -244,13 +260,100 @@ public class CouponService {
     //商家发布用户券
     public void addCoupon(String bizId, Coupon coupon){
         //1.检查商家是否存在
-        //2.检查优惠券参数是否合法
-        //3.插入优惠券数据
-        coupon.setCouponId(UUID.randomUUID().toString().replace("-", ""));
-        coupon.setBizId(bizId);
-        couponMapper.insertCoupon(coupon);
-    }
+        if(bizId == null || bizMapper.selectBusinessById(bizId) == null){
+            throw new RuntimeException("商家不存在");
+        }
 
+        //2.如果是秒杀券，必须设置有效的秒杀时间（这里假设availableQuantity>0或者其他标志位，
+        // 但根据现有逻辑，可用量初始等于总量，且通过addSeckillVoucher预热）
+        
+        //3.检查优惠券参数是否合法
+        if(coupon.getName() == null || coupon.getName().trim().isEmpty()){
+            throw new RuntimeException("优惠券名称不能为空");
+        }
+        if(coupon.getDiscountAmount() == null || coupon.getDiscountAmount() <= 0){
+            throw new RuntimeException("优惠金额必须大于0");
+        }
+        if(coupon.getThresholdAmount() == null || coupon.getThresholdAmount() < 0){
+            // 允许无门槛，但不能为负
+             throw new RuntimeException("使用门槛金额不能为负");
+        }
+        if(coupon.getTotalQuantity() == null || coupon.getTotalQuantity() <= 0){
+            throw new RuntimeException("发放总量必须大于0");
+        }
+        if(coupon.getValidFrom() == null || coupon.getValidTo() == null){
+            throw new RuntimeException("请设置有效期");
+        }
+        if(coupon.getValidTo().isBefore(coupon.getValidFrom())){
+            throw new RuntimeException("结束时间必须晚于开始时间");
+        }
+        if(coupon.getValidTo().isBefore(LocalDateTime.now())){
+            throw new RuntimeException("结束时间必须在当前时间之后");
+        }
+
+        //4.设置默认值和补全信息
+        String couponId = UUID.randomUUID().toString().replace("-", "");
+        coupon.setCouponId(couponId);
+        coupon.setBizId(bizId);
+        coupon.setCreateTime(LocalDateTime.now());
+        coupon.setStatus(1); // Default active (1)
+        coupon.setAvailableQuantity(coupon.getTotalQuantity()); // Init stock
+        
+        if (coupon.getDescription() == null) {
+            coupon.setDescription("");
+        }
+
+        //5.插入数据库
+        couponMapper.insertCoupon(coupon);
+
+        //6.如果活动已经开始或者即将开始（例如在5分钟内），可以选择直接预热到Redis
+        LocalDateTime now = LocalDateTime.now();
+        if (coupon.getValidFrom().isBefore(now.plusMinutes(5)) && coupon.getValidTo().isAfter(now)) {
+            addSeckillVoucher(couponId);
+        }
+    }
+    
+    // 定时任务调用：预热近期开启的优惠券
+    // 加载未来5分钟内开始的优惠券
+    public void loadUpcomingCoupons() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime threshold = now.plusMinutes(5); //提前5min
+        List<Coupon> coupons = couponMapper.selectFutureValidCoupons(now, threshold);
+        
+        if (CollectionUtils.isEmpty(coupons)) {
+            return;
+        }
+        
+        for (Coupon coupon : coupons) {
+            // Check if already loaded
+            String key = "seckill:stock:" + coupon.getCouponId();
+            Boolean hasKey = redisTemplate.hasKey(key);
+            if (!hasKey) {
+                addSeckillVoucher(coupon.getCouponId());
+                System.out.println("Loaded voucher: " + coupon.getCouponId());
+            }
+        }
+    }
+    
+    // 定时任务调用：清理过期优惠券缓存
+    public void cleanExpiredCoupons() {
+        LocalDateTime now = LocalDateTime.now();
+        List<String> expiredIds = couponMapper.selectExpiredCouponIds(now);
+        
+        if (CollectionUtils.isEmpty(expiredIds)) {
+            return;
+        }
+        
+        List<String> keysToDelete = new ArrayList<>();
+        for (String id : expiredIds) {
+            keysToDelete.add("seckill:stock:" + id);
+            keysToDelete.add("seckill:order:" + id);
+            keysToDelete.add("seckill:startTime:" + id);
+            keysToDelete.add("seckill:endTime:" + id);
+        }
+        redisTemplate.delete(keysToDelete);
+        System.out.println("Cleaned expired vouchers: " + expiredIds.size());
+    }
 
     //获取近期领取优惠券记录
     public List<UserBehavior> getUserRecentCouponBiz(String userId, Integer limit) {

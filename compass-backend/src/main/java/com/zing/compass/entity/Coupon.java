@@ -21,7 +21,7 @@ public class Coupon {
 
     private Integer totalQuantity; //发放总量
     private Integer availableQuantity; //剩余可用量
-    private Boolean status; //0:下架, 1:生效
+    private Integer status; //0:下架, 1:活动中
     private LocalDateTime createTime; //创建时间
     //TODO:到结束时间了自动下架
 

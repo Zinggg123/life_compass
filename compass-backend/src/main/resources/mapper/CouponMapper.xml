@@ -28,4 +28,16 @@
         INSERT INTO coupon (coupon_id, biz_id, name, description, discount_amount, threshold_amount, valid_from, valid_to, total_quantity, available_quantity, status, create_time)
         VALUES (#{couponId}, #{bizId}, #{name}, #{description}, #{discountAmount}, #{thresholdAmount}, #{validFrom}, #{validTo}, #{totalQuantity}, #{availableQuantity}, #{status}, #{createTime})
     </insert>
+
+    <select id="selectFutureValidCoupons" resultType="com.zing.compass.entity.Coupon">
+        SELECT * FROM coupon
+        WHERE status = 1
+        AND valid_from > #{now}
+        AND valid_from &lt;= #{threshold} <!-- 开始时间 <= 阈值时间 -->
+    </select>
+
+    <select id="selectExpiredCouponIds" resultType="java.lang.String">
+        SELECT coupon_id FROM coupon
+        WHERE valid_to &lt; #{now}
+    </select>
 </mapper>

@@ -1,6 +1,7 @@
 package com.zing.compass.interceptor;
 
 import com.alibaba.fastjson2.JSON;
+import com.zing.compass.dto.MerchantDTO;
 import com.zing.compass.dto.UserDTO;
 import com.zing.compass.utils.UserHolder;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,31 +27,44 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
         if (token == null || token.isBlank()) {
             return true;
         }
+
         // 2. 基于TOKEN获取redis中的用户
-        String key = "login:token:" + token;
+        String key = "user:login:token:" + token; //用户key
         Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(key);
+
+        // 如果普通用户不存在，尝试商家
+        if (userMap.isEmpty()) {
+            key = "merchant:login:token:" + token; //商家key
+            userMap = stringRedisTemplate.opsForHash().entries(key);
+        }
+
         // 3. 判断用户是否存在
         if (userMap.isEmpty()) {
             return true;
         }
-        // 4. 将Hash数据转为UserDTO对象
+        // 4. 将Hash数据转为UserDTO或MerchantDTO对象
         String json = JSON.toJSONString(userMap);
-        UserDTO userDTO = JSON.parseObject(json, UserDTO.class);
+        if (key.startsWith("user:login:token:")) {
+            UserDTO userDTO = JSON.parseObject(json, UserDTO.class);
+            // 5. 存在，保存用户信息到 ThreadLocal
+            UserHolder.saveUser(userDTO);
+        } else if (key.startsWith("merchant:login:token:")) {
+            MerchantDTO merchantDTO = JSON.parseObject(json, MerchantDTO.class);
+            UserHolder.saveMerchant(merchantDTO);
+        }
 
-        // 5. 存在，保存用户信息到 ThreadLocal
-        UserHolder.saveUser(userDTO);
-        
         // 6. 刷新token有效期
         stringRedisTemplate.expire(key, 30, TimeUnit.MINUTES);
-        
+
         // 7. 放行
         return true;
     }
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        // 移除用户
+        // 移除用户和商家
         UserHolder.removeUser();
+        UserHolder.removeMerchant();
     }
 }
 

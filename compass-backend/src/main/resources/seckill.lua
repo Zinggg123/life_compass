@@ -5,14 +5,32 @@ local voucherId = ARGV[1]
 local userId = ARGV[2]
 -- 1.3.订单id
 local orderId = ARGV[3]
+-- 1.4.当前时间戳
+local currentTime = tonumber(ARGV[4])
 
 -- 2.数据key
 -- 2.1.库存key
 local stockKey = 'seckill:stock:' .. voucherId
 -- 2.2.订单key(set)
 local orderKey = 'seckill:order:' .. voucherId
+-- 2.3.有效时间key
+local startTimeKey = 'seckill:startTime:' .. voucherId
+local endTimeKey = 'seckill:endTime:' .. voucherId
 
 -- 3.脚本业务
+-- 3.0.校验活动时间
+if(currentTime) then
+    local startTime = tonumber(redis.call('get', startTimeKey) or 0)
+    local endTime = tonumber(redis.call('get', endTimeKey) or 0)
+
+    if(startTime > 0 and currentTime < startTime) then
+        return 3 -- 未开始
+    end
+    if(endTime > 0 and currentTime > endTime) then
+        return 4 -- 已结束
+    end
+end
+
 -- 3.1.判断库存是否充足 get stockKey
 if(tonumber(redis.call('get', stockKey) or 0) <= 0) then
     -- 3.2.库存不足，返回1
@@ -30,4 +48,3 @@ redis.call('sadd', orderKey, userId)
 -- 3.6.发送消息到队列中， XADD stream.orders * k v k v
 redis.call('xadd', 'stream.orders', '*', 'userId', userId, 'voucherId', voucherId, 'id', orderId)
 return 0
-

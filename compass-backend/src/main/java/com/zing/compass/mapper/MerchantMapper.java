@@ -9,5 +9,5 @@ public interface MerchantMapper {
     Merchant selectMerchantById(String merchantId);
 
     //插入商家信息
-    void insertMerchant(Merchant merchant);
+    Integer insertMerchant(Merchant merchant);
 }

@@ -61,7 +61,7 @@ public class UserService {
         });
 
         // 存入Redis
-        String key = "login:token:" + token;
+        String key = "user:login:token:" + token;
         redisTemplate.opsForHash().putAll(key, stringUserMap);
         redisTemplate.expire(key, 30, TimeUnit.MINUTES);
         
@@ -78,7 +78,10 @@ public class UserService {
             throw new RuntimeException("用户已存在");
         }
         
-        if(user.getPassword() != null){
+        if(user.getPassword() == null || user.getPassword().isEmpty()){
+            throw new IllegalArgumentException("请输入密码");
+        }
+        else{
             user.setPassword(sha256(user.getPassword()));
         }
 

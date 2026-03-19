@@ -16,4 +16,5 @@ public class Merchant {
     private String phone; // 商家联系电话
     private String bizId; //关联的店铺账号（目前仅能关联一家店）
     private LocalDateTime yelpingSince; // 商家注册时间
+    private String password; // 商家登录密码
 }

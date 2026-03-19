@@ -3,6 +3,7 @@ package com.zing.compass.mapper;
 import com.zing.compass.entity.Coupon;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -13,8 +14,11 @@ public interface CouponMapper {
 
     List<Coupon> selectCouponsByBizId(String bizId);
 
-    int updateStockDecrease(String couponId);
+    Integer updateStockDecrease(String couponId);
     
-    boolean insertCoupon(Coupon coupon);
+    Integer insertCoupon(Coupon coupon);
 
+    List<Coupon> selectFutureValidCoupons(LocalDateTime now, LocalDateTime threshold);
+
+    List<String> selectExpiredCouponIds(LocalDateTime now);
 }

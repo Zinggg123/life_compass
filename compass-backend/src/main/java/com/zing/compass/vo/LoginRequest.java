@@ -12,5 +12,8 @@ public class LoginRequest {
     @JsonProperty("user_id")
     private String userId;
 
+    @JsonProperty("mer_id")
+    private String merId;
+
     private String password;
 }

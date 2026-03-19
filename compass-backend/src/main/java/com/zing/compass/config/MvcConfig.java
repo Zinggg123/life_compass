@@ -21,6 +21,8 @@ public class MvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/user/login",
                         "/user/register",
+                        "/merchant/login",
+                        "/merchant/register",
                         "/recommend" // Adding recommend as likely public or safe to default open
                 ).order(1);
         // Token刷新拦截器
