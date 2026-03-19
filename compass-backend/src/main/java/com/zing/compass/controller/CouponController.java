@@ -1,8 +1,10 @@
 package com.zing.compass.controller;
 
 import com.zing.compass.service.CouponService;
+import com.zing.compass.utils.UserHolder;
 import com.zing.compass.vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,10 +15,10 @@ public class CouponController {
     @Autowired
     private CouponService couponService;
 
-    @PostMapping("/grab")
-    public Result grabCoupon(String userId, String couponId) {
+    @PostMapping("/grab/{id}")
+    public Result grabCoupon(@PathVariable("id") String couponId) {
         try {
-            boolean success = couponService.grabCoupon(userId, couponId);
+            boolean success = couponService.grabCoupon(UserHolder.getUser().getUserId(), couponId);
 
             if (success) {
                 return Result.success("优惠券领券成功");

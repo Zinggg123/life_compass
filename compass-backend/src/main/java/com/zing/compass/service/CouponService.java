@@ -70,12 +70,14 @@ public class CouponService {
         // Find DB stock
         Coupon coupon = couponMapper.selectCouponById(couponId);
         if(coupon != null) {
-            redisTemplate.opsForValue().set("seckill:stock:" + couponId, String.valueOf(coupon.getAvailableQuantity()));
-            // Save start and end time for Lua validation
-            long start = coupon.getValidFrom().toEpochSecond(ZoneOffset.of("+8")); //转成时间戳，东八区
-            long end = coupon.getValidTo().toEpochSecond(ZoneOffset.of("+8"));
-            redisTemplate.opsForValue().set("seckill:startTime:" + couponId, String.valueOf(start));
-            redisTemplate.opsForValue().set("seckill:endTime:" + couponId, String.valueOf(end));
+            long nowSec = System.currentTimeMillis() / 1000;
+            long startSec = coupon.getValidFrom().toEpochSecond(ZoneOffset.of("+8")); //转成时间戳，东八区
+            long endSec = coupon.getValidTo().toEpochSecond(ZoneOffset.of("+8"));
+            long ttlSeconds = endSec - nowSec + 60;
+
+            redisTemplate.opsForValue().set("seckill:stock:" + couponId, String.valueOf(coupon.getAvailableQuantity()), ttlSeconds, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set("seckill:startTime:" + couponId, String.valueOf(startSec), ttlSeconds, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set("seckill:endTime:" + couponId, String.valueOf(endSec), ttlSeconds, TimeUnit.SECONDS);
         }
     }
 
@@ -171,7 +173,7 @@ public class CouponService {
                     String userId = (String) value.get("userId");
                     String cId = (String) value.get("voucherId");
                     String orderId = (String) value.get("id");
-
+                    System.out.println("Processing pending order: " + orderId+", "+ userId + ", " + cId);
                     handleVoucherOrder(userId, cId, orderId);
                     
                     redisTemplate.opsForStream().acknowledge(queueName, "g1", record.getId());
@@ -188,6 +190,7 @@ public class CouponService {
         if(!isLock){
             //获取锁失败
             //TODO：处理
+            System.out.println("获取锁失败");
             return;
         }
         try {
@@ -201,7 +204,7 @@ public class CouponService {
                     return null;
                 }
                 
-                // 2. Reduce stock (Optimistic Lock)
+                // 2. 扣减库存 (Optimistic Lock)
                 int success = couponMapper.updateStockDecrease(couponId);
                 if (success < 1) {
                     //库存不足
@@ -210,8 +213,30 @@ public class CouponService {
                 }
                 
                 // 3. Create Order
-                userCouponMapper.insertUserCoupon(orderId, userId, couponId, LocalDateTime.now());
-                //TODO:补充UserCoupon冗余字段，方便查询展示
+                // fetch coupon details for redundancy
+                Coupon coupon = couponMapper.selectCouponById(couponId);
+                if (coupon == null) {
+                    throw new RuntimeException("Coupon not found during order creation");
+                }
+
+                UserCoupon userCoupon = new UserCoupon();
+                userCoupon.setUserCouponId(orderId);
+                userCoupon.setUserId(userId);
+                userCoupon.setCouponId(couponId);
+                userCoupon.setGetTime(LocalDateTime.now());
+                userCoupon.setStatus(false); // Unused
+
+                // Populate redundant fields
+                userCoupon.setBizId(coupon.getBizId());
+                userCoupon.setName(coupon.getName());
+                userCoupon.setDiscountAmount(coupon.getDiscountAmount());
+                userCoupon.setThresholdAmount(coupon.getThresholdAmount());
+                userCoupon.setValidFrom(coupon.getValidFrom());
+                userCoupon.setValidTo(coupon.getValidTo());
+
+                if(userCouponMapper.insertUserCoupon(userCoupon) <= 0){
+                    throw new RuntimeException("Failed to create user coupon record");
+                }
                 return null;
             });
         } finally {

@@ -1,5 +1,6 @@
 package com.zing.compass.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,14 +17,16 @@ public class Coupon {
     private String description; //券描述
     private Integer discountAmount; //优惠金额
     private Integer thresholdAmount; //使用门槛金额
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime validFrom; //有效期开始时间戳
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime validTo;   //有效期结束时间戳
 
     private Integer totalQuantity; //发放总量
     private Integer availableQuantity; //剩余可用量
     private Integer status; //0:下架, 1:活动中
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime; //创建时间
-    //TODO:到结束时间了自动下架
-
-
 }

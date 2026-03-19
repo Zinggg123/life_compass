@@ -32,7 +32,7 @@ public class MerchantController {
     }
 
     @PostMapping("/register")
-    public Result register(Merchant merchant) {
+    public Result register(@RequestBody Merchant merchant) {
         try {
             Merchant newMer = merchantService.register(merchant);
             return Result.success("商家注册成功", newMer);

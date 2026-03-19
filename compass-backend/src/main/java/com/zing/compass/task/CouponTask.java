@@ -16,10 +16,10 @@ public class CouponTask {
         couponService.loadUpcomingCoupons();
     }
 
-    // 每分钟执行一次，清理已过期的优惠券
-    @Scheduled(cron = "0 * * * * ?")
-    public void cleanTask() {
-        couponService.cleanExpiredCoupons();
-    }
+    // 每分钟执行一次，清理已过期的优惠券(当前采用Redis自动过期机制)
+//    @Scheduled(cron = "0 * * * * ?")
+//    public void cleanTask() {
+//        couponService.cleanExpiredCoupons();
+//    }
 }
 

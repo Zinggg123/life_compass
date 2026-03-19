@@ -14,6 +14,7 @@ public class UserCoupon {
     private String userId;  //用户ID
     private String couponId;  //券模板ID（关联）
     private Boolean status; //0：未使用, 1:已使用
+    private String bizId;  //冗余字段
 
     private String name;  //冗余字段，方便查询展示
     private Integer discountAmount; //冗余字段，方便查询展示

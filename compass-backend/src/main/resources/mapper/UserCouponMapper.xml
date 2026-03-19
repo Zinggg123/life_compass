@@ -8,8 +8,16 @@
     </select>
 
     <insert id="insertUserCoupon">
-        INSERT INTO user_coupon (grab_id, user_id, coupon_id, get_time)
-        VALUES (#{grabId}, #{userId}, #{couponId}, #{getTime})
+        INSERT INTO user_coupon (
+            user_coupon_id, user_id, coupon_id, status,
+            name, discount_amount, threshold_amount, valid_from, valid_to,
+            get_time, biz_id
+        )
+        VALUES (
+            #{userCouponId}, #{userId}, #{couponId}, #{status},
+            #{name}, #{discountAmount}, #{thresholdAmount}, #{validFrom}, #{validTo},
+            #{getTime}, #{bizId}
+        )
     </insert>
 
     <delete id="deleteUserCoupon">

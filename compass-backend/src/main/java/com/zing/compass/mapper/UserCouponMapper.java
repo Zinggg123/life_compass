@@ -12,7 +12,7 @@ import java.util.List;
 public interface UserCouponMapper {
     UserCoupon selectByUserIdAndCouponId(String userId, String couponId);
 
-    boolean insertUserCoupon(String grabId, String userId, String couponId, LocalDateTime getTime);
+    Integer insertUserCoupon(UserCoupon userCoupon);
 
     boolean deleteUserCoupon(String userId, String couponId);
 

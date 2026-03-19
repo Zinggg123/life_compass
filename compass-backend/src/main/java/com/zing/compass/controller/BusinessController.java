@@ -4,9 +4,11 @@ import com.zing.compass.entity.Business;
 import com.zing.compass.entity.Coupon;
 import com.zing.compass.service.BizService;
 import com.zing.compass.service.CouponService;
+import com.zing.compass.utils.UserHolder;
 import com.zing.compass.vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,16 +28,21 @@ public class BusinessController {
             return Result.success("获取商家优惠券成功", coupons);
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());
+        } catch (Exception e) {
+            return Result.error("An unexpected error occurred");
         }
     }
 
     @PostMapping("/addCoupon")
-    public Result addCoupon(String bizId, Coupon couponInfo) {
+    public Result addCoupon(@RequestBody Coupon couponInfo) {
         try {
-            couponService.addCoupon(bizId, couponInfo);
+            System.out.println("CouponInfo: "+couponInfo.toString());
+            couponService.addCoupon(UserHolder.getMerchant().getBizId(), couponInfo);
             return Result.success("添加商家优惠券成功", null);
         } catch (RuntimeException e) {
-            return Result.error(e.getMessage());
+            return Result.failure(e.getMessage());
+        } catch (Exception e){
+            return Result.error("An unexpected error occurred");
         }
     }
 }
