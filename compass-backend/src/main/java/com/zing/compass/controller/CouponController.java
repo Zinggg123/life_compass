@@ -15,12 +15,18 @@ public class CouponController {
 
     @PostMapping("/grab")
     public Result grabCoupon(String userId, String couponId) {
-        boolean success = couponService.grabCoupon(userId, couponId);
+        try {
+            boolean success = couponService.grabCoupon(userId, couponId);
 
-        if (success) {
-            return Result.success("Coupon grabbed successfully");
-        } else {
-            return Result.failure("Failed to grab coupon");
+            if (success) {
+                return Result.success("优惠券领券成功");
+            } else {
+                return Result.failure("抢券失败");
+            }
+        } catch (RuntimeException e) {
+            return Result.failure(e.getMessage());
+        } catch (Exception e) {
+            return Result.error("An unexpected error occurred");
         }
     }
 

@@ -24,4 +24,6 @@ public class Coupon {
     private Boolean status; //0:下架, 1:生效
     private LocalDateTime createTime; //创建时间
     //TODO:到结束时间了自动下架
+
+
 }

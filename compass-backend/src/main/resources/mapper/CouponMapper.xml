@@ -18,6 +18,12 @@
         WHERE biz_id = #{bizId}
     </select>
 
+    <update id="updateStockDecrease">
+        UPDATE coupon
+        SET available_quantity = available_quantity - 1
+        WHERE coupon_id = #{couponId} AND available_quantity > 0
+    </update>
+
     <insert id="insertCoupon">
         INSERT INTO coupon (coupon_id, biz_id, name, description, discount_amount, threshold_amount, valid_from, valid_to, total_quantity, available_quantity, status, create_time)
         VALUES (#{couponId}, #{bizId}, #{name}, #{description}, #{discountAmount}, #{thresholdAmount}, #{validFrom}, #{validTo}, #{totalQuantity}, #{availableQuantity}, #{status}, #{createTime})

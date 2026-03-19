@@ -13,6 +13,8 @@ public interface CouponMapper {
 
     List<Coupon> selectCouponsByBizId(String bizId);
 
+    int updateStockDecrease(String couponId);
+    
     boolean insertCoupon(Coupon coupon);
 
 }
