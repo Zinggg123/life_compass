@@ -36,7 +36,7 @@ public class OrderService {
             userCoupon = couponService.validateCoupon(userId, couponId);
 
             // 2.校验券的金额和实付金额是否匹配
-            if(userCoupon.getThresholdAmount().compareTo(orderInfo.getAmount()) < 0) {
+            if(userCoupon.getThresholdAmount().compareTo(orderInfo.getAmount()) > 0) {
                 throw new IllegalArgumentException("未达到优惠券使用门槛");
             }
             if (userCoupon.getDiscountAmount().compareTo(orderInfo.getAmount() - orderInfo.getAmountPaid()) != 0) {

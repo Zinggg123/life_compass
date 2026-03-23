@@ -6,12 +6,14 @@ import com.zing.compass.dto.UserDTO;
 import com.zing.compass.utils.UserHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class RefreshTokenInterceptor implements HandlerInterceptor {
 
     private StringRedisTemplate stringRedisTemplate;
@@ -24,6 +26,7 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 1. 获取请求头中的token
         String token = request.getHeader("authorization"); // Assuming standard header or "authorization"
+        //log.info("收到请求：{}，token：{}", request.getRequestURI(), token);
         if (token == null || token.isBlank()) {
             return true;
         }

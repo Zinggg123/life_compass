@@ -8,6 +8,7 @@ import com.zing.compass.service.UserService;
 import com.zing.compass.vo.LoginRequest;
 import com.zing.compass.vo.Result;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
@@ -33,6 +35,7 @@ public class UserController {
             Map<String, Object> data = userService.login(req.getUserId(), req.getPassword());
             return Result.success(data);
         } catch (RuntimeException e) {
+            log.info("登录失败: {}", e.getMessage());
             return Result.error(e.getMessage());
         }
     }
