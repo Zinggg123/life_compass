@@ -24,38 +24,43 @@ class DataProcessor:
         u_idx = self.user_token2id.get(user_id_str)
         
         if model_type == "LightGCN":
-            print(f"LightGCN input: {u_idx}")
-            if u_idx is None:
-                return None, None
-            # LightGCN 只需要 user_idx 来查表， 历史行为向量返回空值
-            return u_idx, torch.tensor([u_idx], dtype=torch.long, device=self.device)
-            
+            return self._prepare_lightgcn_input(u_idx)
         elif model_type in ["SASRec", "GRU4Rec"]:
-            # 2. 转换 History Items
-            item_ids = []
-            for item_str in history_items_list:
-                i_idx = self.item_token2id.get(item_str)
-                if i_idx is not None:
-                    item_ids.append(i_idx)
-
-            print(f"{model_type} input: {u_idx}, {item_ids}")
-
-            # SASRec / GRU4Rec 需要序列
-            if len(item_ids) == 0: # 空序列处理
-                return None, None
-            else:
-                if len(item_ids) > self.max_seq_len:
-                    seq = item_ids[-self.max_seq_len:]
-                else:
-                    seq = [0] * (self.max_seq_len - len(item_ids)) + item_ids
-                seq_len = min(len(item_ids), self.max_seq_len)
-            
-            seq_tensor = torch.tensor([seq], dtype=torch.long, device=self.device)
-            seq_len_tensor = torch.tensor([seq_len], dtype=torch.long, device=self.device)
-            
-            return u_idx, (seq_tensor, seq_len_tensor)
+            return self._prepare_sequential_input(u_idx, history_items_list, model_type)
         
         return None, None
+
+    def _prepare_lightgcn_input(self, u_idx):
+        print(f"LightGCN input: {u_idx}")
+        if u_idx is None:
+            return None, None
+        # LightGCN 只需要 user_idx 来查表， 历史行为向量返回空值
+        return u_idx, torch.tensor([u_idx], dtype=torch.long, device=self.device)
+
+    def _prepare_sequential_input(self, u_idx, history_items_list, model_type):
+        # 2. 转换 History Items
+        item_ids = []
+        for item_str in history_items_list:
+            i_idx = self.item_token2id.get(item_str)
+            if i_idx is not None:
+                item_ids.append(i_idx)
+
+        print(f"{model_type} input: {u_idx}, {item_ids}")
+
+        # SASRec / GRU4Rec 需要序列
+        if len(item_ids) == 0: # 空序列处理
+            return None, None
+            
+        if len(item_ids) > self.max_seq_len:
+            seq = item_ids[-self.max_seq_len:]
+        else:
+            seq = [0] * (self.max_seq_len - len(item_ids)) + item_ids
+        seq_len = min(len(item_ids), self.max_seq_len)
+        
+        seq_tensor = torch.tensor([seq], dtype=torch.long, device=self.device)
+        seq_len_tensor = torch.tensor([seq_len], dtype=torch.long, device=self.device)
+        
+        return u_idx, (seq_tensor, seq_len_tensor)
 
     def map_item_ids_to_tokens(self, item_ids):
         return [self.item_id2token.get(idx, "UNKNOWN") for idx in item_ids]

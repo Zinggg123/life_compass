@@ -30,63 +30,67 @@ class ModelWrapper:
         
         self.embedding_dim = config['embedding_size']
 
-
-        
     def compute_user_vector(self, input_data):
         """
         输入: 
            - LightGCN: user_idx_tensor (1,)
-           - SASRec: (seq_tensor, seq_len_tensor)
+           - SASRec / GRU4Rec: (seq_tensor, seq_len_tensor)
         输出: user_vector (1, dim) numpy array
         """
         with torch.no_grad():
             if self.model_name == "LightGCN":
-                user_idx = input_data
-                vec = self.model.user_embedding(user_idx)
-                
+                vec = self._compute_lightgcn_vector(input_data)
             elif self.model_name == "SASRec":
-                seq, seq_len = input_data
-                # 复用 SASRec 的前向逻辑提取 seq_output 的最后一位
-                # 注意：RecBole 的 SASRec forward 通常返回 scores，我们需要中间层
-                # 这里手动复现 forward 的关键部分以获取 embedding
-                
-                masked_emb = self.model.item_embedding(seq)
-                position_ids = torch.arange(seq.size(1), dtype=torch.long, device=self.device)
-                position_ids = position_ids.unsqueeze(0).expand_as(seq)
-                position_emb = self.model.position_embedding(position_ids)
-                
-                seq_output = masked_emb + position_emb
-                
-                # Attention Mask
-                att_mask = (seq != 0)
-                att_mask = att_mask.unsqueeze(1).unsqueeze(2)
-                att_mask = (~att_mask).float() * -10000.0
-                
-                # # Transformer Layers
-                for layer in self.model.trm_encoder.layer:
-                    seq_output = layer(seq_output, att_mask)
-            
-                # Gather last valid item
-                last_pos = seq_len - 1
-                last_pos = torch.clamp(last_pos, min=0) # 处理 seq_len=0 的情况
-                
-                user_vec = seq_output.gather(1, last_pos.view(-1, 1, 1).expand(-1, -1, seq_output.shape[-1])).squeeze(1)
-                vec = user_vec
-                
+                vec = self._compute_sasrec_vector(input_data)
             elif self.model_name == "GRU4Rec":
-                seq, seq_len = input_data
-                item_seq_emb = self.model.item_embedding(seq)
-                item_seq_emb_dropout = self.model.emb_dropout(item_seq_emb)
-                
-                # GRU前向传播
-                gru_output, _ = self.model.gru_layers(item_seq_emb_dropout)
-                gru_output = self.model.dense(gru_output)
-                
-                # 获取最后一次有效点击的隐向量
-                last_pos = seq_len - 1
-                last_pos = torch.clamp(last_pos, min=0)
-                
-                user_vec = gru_output.gather(1, last_pos.view(-1, 1, 1).expand(-1, -1, gru_output.shape[-1])).squeeze(1)
-                vec = user_vec
+                vec = self._compute_gru4rec_vector(input_data)
+            else:
+                raise ValueError(f"Unsupported model: {self.model_name}")
             
             return vec.detach().cpu().numpy()
+
+    def _compute_lightgcn_vector(self, input_data):
+        user_idx = input_data
+        return self.model.user_embedding(user_idx)
+
+    def _compute_sasrec_vector(self, input_data):
+        seq, seq_len = input_data
+        # 复用 SASRec 的前向逻辑提取 seq_output 的最后一位
+        masked_emb = self.model.item_embedding(seq)
+        position_ids = torch.arange(seq.size(1), dtype=torch.long, device=self.device)
+        position_ids = position_ids.unsqueeze(0).expand_as(seq)
+        position_emb = self.model.position_embedding(position_ids)
+        
+        seq_output = masked_emb + position_emb
+        
+        # Attention Mask
+        att_mask = (seq != 0)
+        att_mask = att_mask.unsqueeze(1).unsqueeze(2)
+        att_mask = (~att_mask).float() * -10000.0
+        
+        # Transformer Layers
+        for layer in self.model.trm_encoder.layer:
+            seq_output = layer(seq_output, att_mask)
+    
+        # Gather last valid item
+        last_pos = seq_len - 1
+        last_pos = torch.clamp(last_pos, min=0)
+        
+        user_vec = seq_output.gather(1, last_pos.view(-1, 1, 1).expand(-1, -1, seq_output.shape[-1])).squeeze(1)
+        return user_vec
+
+    def _compute_gru4rec_vector(self, input_data):
+        seq, seq_len = input_data
+        item_seq_emb = self.model.item_embedding(seq)
+        item_seq_emb_dropout = self.model.emb_dropout(item_seq_emb)
+        
+        # GRU前向传播
+        gru_output, _ = self.model.gru_layers(item_seq_emb_dropout)
+        gru_output = self.model.dense(gru_output)
+        
+        # 获取最后一次有效点击的隐向量
+        last_pos = seq_len - 1
+        last_pos = torch.clamp(last_pos, min=0)
+        
+        user_vec = gru_output.gather(1, last_pos.view(-1, 1, 1).expand(-1, -1, gru_output.shape[-1])).squeeze(1)
+        return user_vec
