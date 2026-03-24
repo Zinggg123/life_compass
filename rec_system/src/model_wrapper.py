@@ -72,5 +72,21 @@ class ModelWrapper:
                 
                 user_vec = seq_output.gather(1, last_pos.view(-1, 1, 1).expand(-1, -1, seq_output.shape[-1])).squeeze(1)
                 vec = user_vec
+                
+            elif self.model_name == "GRU4Rec":
+                seq, seq_len = input_data
+                item_seq_emb = self.model.item_embedding(seq)
+                item_seq_emb_dropout = self.model.emb_dropout(item_seq_emb)
+                
+                # GRU前向传播
+                gru_output, _ = self.model.gru_layers(item_seq_emb_dropout)
+                gru_output = self.model.dense(gru_output)
+                
+                # 获取最后一次有效点击的隐向量
+                last_pos = seq_len - 1
+                last_pos = torch.clamp(last_pos, min=0)
+                
+                user_vec = gru_output.gather(1, last_pos.view(-1, 1, 1).expand(-1, -1, gru_output.shape[-1])).squeeze(1)
+                vec = user_vec
             
             return vec.detach().cpu().numpy()

@@ -30,7 +30,7 @@ class DataProcessor:
             # LightGCN 只需要 user_idx 来查表， 历史行为向量返回空值
             return u_idx, torch.tensor([u_idx], dtype=torch.long, device=self.device)
             
-        elif model_type == "SASRec":
+        elif model_type in ["SASRec", "GRU4Rec"]:
             # 2. 转换 History Items
             item_ids = []
             for item_str in history_items_list:
@@ -38,9 +38,9 @@ class DataProcessor:
                 if i_idx is not None:
                     item_ids.append(i_idx)
 
-            print(f"SASRec input: {u_idx}, {item_ids}")
+            print(f"{model_type} input: {u_idx}, {item_ids}")
 
-            # SASRec 需要序列
+            # SASRec / GRU4Rec 需要序列
             if len(item_ids) == 0: # 空序列处理
                 return None, None
             else:

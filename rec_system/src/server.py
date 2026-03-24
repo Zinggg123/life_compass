@@ -38,6 +38,11 @@ sasrec_wrapper = ModelWrapper(
     os.path.join(CONFIG_DIR, "sasrec_config.yaml"),
     os.path.join(ARTIFACTS_DIR, "SASRec-Mar-12-2026_16-53-02.pth")
 )
+gru4rec_wrapper = ModelWrapper(
+    "GRU4Rec", 
+    os.path.join(CONFIG_DIR, "gru4rec_config.yaml"), # 假设你有这个配置文件
+    os.path.join(ARTIFACTS_DIR, "GRU4Rec-Mar-12-2026_xxx.pth") # 请修改为实际的带时间戳的模型文件名
+)
 
 # 3. 初始化召回引擎
 engine = RecallEngine(
@@ -48,7 +53,7 @@ engine = RecallEngine(
 )
 
 # 4. 初始化排序器
-ranker = SimpleRanker(weights={'LightGCN': 0.4, 'SASRec': 0.6}, final_top_k=100)
+ranker = SimpleRanker(weights={'LightGCN': 0.4, 'SASRec': 0.6}, final_top_k=100, gru4rec_model=gru4rec_wrapper)
 
 # --- Request Model ---
 class RecRequest(BaseModel):
@@ -70,6 +75,8 @@ async def recommend(req: RecRequest):
     u_idx_lgcn, input_lgcn = processor.get_user_vector_input("LightGCN", req.user_id, req.history_items)
     # SASRec 输入
     u_idx_sas, input_sas = processor.get_user_vector_input("SASRec", req.user_id, req.history_items)
+    # GRU4Rec 输入
+    u_idx_gru, input_gru = processor.get_user_vector_input("GRU4Rec", req.user_id, req.history_items)
     
     if input_lgcn is None and input_sas is None:
         # TODO:冷启动策略：返回热门物品
@@ -78,6 +85,7 @@ async def recommend(req: RecRequest):
     # 2. 计算用户向量
     vec_lgcn = lgcn_wrapper.compute_user_vector(input_lgcn) if input_lgcn is not None else None
     vec_sas = sasrec_wrapper.compute_user_vector(input_sas) if input_sas is not None else None
+    vec_gru = gru4rec_wrapper.compute_user_vector(input_gru) if input_gru is not None else None
 
     # 3. 召回
     results = engine.parallel_recall(vec_lgcn, vec_sas)
@@ -85,8 +93,12 @@ async def recommend(req: RecRequest):
     if not results:
         raise HTTPException(status_code=500, detail="Failed to generate any recall vectors")
 
-    # 4. 排序
-    final_ids, final_scores = ranker.sort(results)
+    # 4. 排序 (改用 GRU4Rec 进行重排)
+    if vec_gru is not None:
+        final_ids, final_scores = ranker.sort_with_gru4rec(results, vec_gru)
+    else:
+        # 降级方案
+        final_ids, final_scores = ranker.sort(results)
     
     # 5. ID 转 Token
     final_tokens = processor.map_item_ids_to_tokens(final_ids)
