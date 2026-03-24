@@ -1,0 +1,71 @@
+# =========设备配置===========
+use_gpu: False
+# gpu_id: 0
+seed: 2024
+# num_workers: 4
+# prefetch_factor: 4
+# pin_memory: True
+
+# ======== 日志与保存 ========
+show_progress: True
+verbose: 1
+save_dataset: False
+
+# =========数据集配置===========
+dataset: yelp2018
+data_path: F:\bishe\rec_system\dataset  #更改为本机路径
+checkpoint_dir: F:\bishe\rec_system\artifact
+
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: item_id
+TIME_FIELD: timestamp
+load_col:
+  inter: [user_id, item_id, timestamp]
+
+# 序列长度设置
+MAX_ITEM_LIST_LENGTH: 30 #50
+
+# val_interval:
+#     rating: "[3,inf)"    
+# unused_col: 
+#     inter: [rating]
+    
+user_inter_num_interval: "[10,inf)"
+item_inter_num_interval: "[10,inf)"
+
+# 确保双向一致性（只保留既在用户列表中又在物品列表中且满足上述条件的交互）
+filter_inter_by_user_or_item: True
+
+# ==========GRU4Rec 模型参数===================
+model: 'GRU4Rec'
+embedding_size: 64
+hidden_size: 128 
+num_layers: 1 
+dropout_prob: 0.3     # 防止过拟合
+loss_type: CE       # 交叉熵（全量预测）
+weight_decay: 1e-5
+
+
+# ===========训练与评估配置==================
+epochs: 200 
+train_batch_size: 2048
+eval_batch_size: 2048
+learning_rate: 0.005
+optimizer: adam
+weight_decay: 1e-5
+
+eval_step: 1
+stopping_step: 10
+
+train_neg_sample_args: ~
+
+# 评估设置
+eval_args:
+  group_by: user
+  order: TO 
+  split: {'LS': 'valid_and_test'}  # 留一法
+  mode: full         # 全量评估
+metrics: [Recall, NDCG, MRR, Hit] 
+topk: [10, 20] 
+valid_metric: NDCG@10
+

@@ -67,9 +67,9 @@ def export_artifacts(model_name, config_file, model_path):
         "user_id2token": user_i2t,
         "item_token2id": item_t2i,
         "item_id2token": item_i2t,
-        "max_seq_len": getattr(config, 'MAX_ITEM_LIST_LENGTH', 50),
-        "embedding_dim": config['embedding_size'],
-        "num_users": num_users,
+        "max_seq_len": getattr(config, 'MAX_ITEM_LIST_LENGTH', 50), #TODO: bug:meta.pkl不应包含
+        "embedding_dim": config['embedding_size'], #TODO: bug:meta.pkl不应包含
+        "num_users": num_users, 
         "num_items": num_items
     }
     
@@ -128,7 +128,7 @@ def export_artifacts(model_name, config_file, model_path):
 
 if __name__ == "__main__":
     try:
-        # export_artifacts("LightGCN", CONFIG_FILES["LightGCN"], MODEL_PATHS["LightGCN"])
+        export_artifacts("LightGCN", CONFIG_FILES["LightGCN"], MODEL_PATHS["LightGCN"])
         export_artifacts("SASRec", CONFIG_FILES["SASRec"], MODEL_PATHS["SASRec"])
         print("\n=== All Artifacts Prepared Successfully ===")
     except Exception as e:

@@ -14,6 +14,7 @@ warnings.filterwarnings('ignore', message=".*Copy-on-Write.*")
 from src.data_loader import DataProcessor
 from src.model_wrapper import ModelWrapper
 from src.recall_engine import RecallEngine
+from src.merger import Merger
 from src.ranker import SimpleRanker
 
 app = FastAPI(title="Realtime RecSys")
@@ -23,9 +24,11 @@ app = FastAPI(title="Realtime RecSys")
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ARTIFACTS_DIR = os.path.join(BASE_DIR, "artifact")
 CONFIG_DIR = os.path.join(BASE_DIR, "config")
+DATASET_DIR = os.path.join(BASE_DIR, "dataset")
 
 # 1. 加载数据处理器
 processor = DataProcessor(os.path.join(ARTIFACTS_DIR, "dataset_meta.pkl"))
+processor.load_hot_items(os.path.join(DATASET_DIR, "hot_with_time2.csv")) # 加载热门榜单
 
 # 2. 加载模型 Wrapper
 lgcn_wrapper = ModelWrapper(
@@ -40,17 +43,22 @@ sasrec_wrapper = ModelWrapper(
 )
 gru4rec_wrapper = ModelWrapper(
     "GRU4Rec", 
-    os.path.join(CONFIG_DIR, "gru4rec_config.yaml"), # 假设你有这个配置文件
-    os.path.join(ARTIFACTS_DIR, "GRU4Rec-Mar-12-2026_xxx.pth") # 请修改为实际的带时间戳的模型文件名
+    os.path.join(CONFIG_DIR, "gru4rec_config.yaml"), 
+    os.path.join(ARTIFACTS_DIR, "GRU4Rec-Mar-24-2026_02-14-15.pth")
 )
+# gru4rec_wrapper = None
 
 # 3. 初始化召回引擎
 engine = RecallEngine(
     lgcn_wrapper, sasrec_wrapper,
     os.path.join(ARTIFACTS_DIR, "lightgcn_faiss.index"),
     os.path.join(ARTIFACTS_DIR, "sasrec_faiss.index"),
+    hot_item_ids=processor.hot_items_internal_ids,
     top_k=100
 )
+
+# 初始化合并器
+merger = Merger()
 
 # 4. 初始化排序器
 ranker = SimpleRanker(weights={'LightGCN': 0.4, 'SASRec': 0.6}, final_top_k=100, gru4rec_model=gru4rec_wrapper)
@@ -59,6 +67,7 @@ ranker = SimpleRanker(weights={'LightGCN': 0.4, 'SASRec': 0.6}, final_top_k=100,
 class RecRequest(BaseModel):
     user_id: str
     history_items: List[str] # 按时间顺序
+    recall_k: int = 100
     top_k: int = 100
 
 class RecResponse(BaseModel):
@@ -78,32 +87,34 @@ async def recommend(req: RecRequest):
     # GRU4Rec 输入
     u_idx_gru, input_gru = processor.get_user_vector_input("GRU4Rec", req.user_id, req.history_items)
     
-    if input_lgcn is None and input_sas is None:
-        # TODO:冷启动策略：返回热门物品
-        raise HTTPException(status_code=400, detail="Unknown user and empty history")
+    # 移除直接报错逻辑，允许完全冷启动走到后续拿到纯热榜数据
 
     # 2. 计算用户向量
     vec_lgcn = lgcn_wrapper.compute_user_vector(input_lgcn) if input_lgcn is not None else None
     vec_sas = sasrec_wrapper.compute_user_vector(input_sas) if input_sas is not None else None
     vec_gru = gru4rec_wrapper.compute_user_vector(input_gru) if input_gru is not None else None
+    # vec_gru = None
 
-    # 3. 召回
-    results = engine.parallel_recall(vec_lgcn, vec_sas)
+    # 3. 召回 (并行三路)
+    results = engine.parallel_recall(vec_lgcn, vec_sas, target_k=req.recall_k)
+
+    # print("raw recall results:", results)
 
     if not results:
         raise HTTPException(status_code=500, detail="Failed to generate any recall vectors")
 
-    # 4. 排序 (改用 GRU4Rec 进行重排)
-    if vec_gru is not None:
-        final_ids, final_scores = ranker.sort_with_gru4rec(results, vec_gru)
-    else:
-        # 降级方案
-        final_ids, final_scores = ranker.sort(results)
+    # 4. 合并与去重归一
+    merged_results = merger.merge(results, req.recall_k*2) # 200个召回结果？
+
+    # print("merged_results:", merged_results)
+
+    # 5. 排序打分
+    final_ids, final_scores = ranker.rank(merged_results, vec_gru, req.top_k)
     
-    # 5. ID 转 Token
+    # 6. ID 转 Token
     final_tokens = processor.map_item_ids_to_tokens(final_ids)
 
-    print("final_tokens:", final_tokens)
+    # print("final_tokens:", final_tokens)
 
     return RecResponse(
         user_id=req.user_id,

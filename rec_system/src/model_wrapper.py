@@ -25,6 +25,7 @@ class ModelWrapper:
         
         self.model = get_model(config['model'])(config, dataset).to(self.device)
         checkpoint = torch.load(pth_path, map_location=self.device, weights_only=False)
+        # print(f"{model_name} 's state_dict: {dict(checkpoint['state_dict'])}")
         self.model.load_state_dict(checkpoint['state_dict'])
         self.model.eval()
         
