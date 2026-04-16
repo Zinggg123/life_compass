@@ -24,6 +24,7 @@ public class MvcConfig implements WebMvcConfigurer {
                         "/merchant/login",
                         "/merchant/register",
                         "/business/getCoupons",
+                        "/recommend",
                         "/test"
                 ).order(1);
         // Token刷新拦截器

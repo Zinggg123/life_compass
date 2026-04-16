@@ -16,4 +16,5 @@ public class OrderInfo {
     private LocalDateTime orderTime; //使用时间
     private Integer amount; //总金额
     private Integer amountPaid; //实付金额
+    private String bizId;
 }

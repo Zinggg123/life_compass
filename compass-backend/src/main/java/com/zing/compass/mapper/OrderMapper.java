@@ -3,6 +3,7 @@ package com.zing.compass.mapper;
 import com.zing.compass.entity.OrderInfo;
 import com.zing.compass.entity.UserBehavior;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -11,4 +12,10 @@ public interface OrderMapper {
     Integer insertOrder(OrderInfo orderInfo);
 
     List<UserBehavior> selectRecentOrderBiz(String userId, Integer limit);
+
+    List<OrderInfo> selectOrdersByBizIdPage(@Param("bizId") String bizId,
+                                            @Param("offset") Integer offset,
+                                            @Param("limit") Integer limit);
+
+    Long countOrdersByBizId(@Param("bizId") String bizId);
 }

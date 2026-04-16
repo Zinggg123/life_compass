@@ -3,8 +3,8 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zing.compass.mapper.OrderMapper">
     <insert id="insertOrder">
-        INSERT INTO order_info (order_id, user_id, coupon_id, order_time, total_amount, amount_paid)
-        VALUES (#{orderId}, #{userId}, #{couponId}, #{orderTime}, #{amount}, #{amountPaid})
+        INSERT INTO order_info (order_id, user_id, user_coupon_id, order_time, amount, amount_paid, biz_id)
+        VALUES (#{orderId}, #{userId}, #{couponId}, #{orderTime}, #{amount}, #{amountPaid}, #{bizId})
     </insert>
 
     <select id="selectRecentOrderBiz" resultType="com.zing.compass.entity.UserBehavior">
@@ -13,5 +13,19 @@
         WHERE user_id = #{userId}
         ORDER BY order_time DESC
         LIMIT #{limit}
+    </select>
+
+    <select id="selectOrdersByBizIdPage" resultType="com.zing.compass.entity.OrderInfo">
+        SELECT order_id, user_id, user_coupon_id AS couponId, order_time, amount, amount_paid, biz_id
+        FROM order_info
+        WHERE biz_id = #{bizId}
+        ORDER BY order_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countOrdersByBizId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM order_info
+        WHERE biz_id = #{bizId}
     </select>
 </mapper>

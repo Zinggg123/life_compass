@@ -1,7 +1,9 @@
 package com.zing.compass.controller;
 
 import com.zing.compass.entity.Coupon;
+import com.zing.compass.service.CommentService;
 import com.zing.compass.service.CouponService;
+import com.zing.compass.service.OrderService;
 import com.zing.compass.vo.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,12 @@ import java.util.List;
 public class BusinessController {
     @Autowired
     private CouponService couponService;
+
+    @Autowired
+    private OrderService orderService;
+
+    @Autowired
+    private CommentService commentService;
 
     @PostMapping("/getCoupons")
     public Result getCoupons(String bizId) {
@@ -43,6 +51,34 @@ public class BusinessController {
             return Result.failure(e.getMessage());
         } catch (Exception e){
             log.error("新增优惠券异常", e);
+            return Result.error("An unexpected error occurred");
+        }
+    }
+
+    @PostMapping("/orders")
+    public Result listCurrentMerchantOrders(
+            @RequestParam(defaultValue = "1") Integer pageNo,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        try {
+            return Result.success("获取商家订单成功", orderService.getCurrentMerchantOrderPage(pageNo, pageSize));
+        } catch (RuntimeException e) {
+            return Result.failure(e.getMessage());
+        } catch (Exception e) {
+            log.error("查询商家订单异常", e);
+            return Result.error("An unexpected error occurred");
+        }
+    }
+
+    @PostMapping("/comments")
+    public Result listCurrentMerchantComments(
+            @RequestParam(defaultValue = "1") Integer pageNo,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        try {
+            return Result.success("获取商家评价成功", commentService.getCurrentMerchantCommentPage(pageNo, pageSize));
+        } catch (RuntimeException e) {
+            return Result.failure(e.getMessage());
+        } catch (Exception e) {
+            log.error("查询商家评价异常", e);
             return Result.error("An unexpected error occurred");
         }
     }

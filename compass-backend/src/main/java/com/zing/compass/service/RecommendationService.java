@@ -2,6 +2,7 @@ package com.zing.compass.service;
 
 import com.zing.compass.entity.SimpleBusiness;
 import com.zing.compass.utils.UserHolder;
+import com.zing.compass.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -28,11 +29,14 @@ public class RecommendationService {
             pageId = 0;
         }
 
-        String userId = UserHolder.getUser().getUserId();
+        UserDTO currentUser = UserHolder.getUser();
+        String userId = currentUser == null ? null : currentUser.getUserId();
 
-        String key = "recommend:user:" + userId;
+        String key = "";
         if(userId == null){
             key = "recommend:user:empty";
+        } else{
+            key = "recommend:user:" + userId;
         }
         boolean hasKey = Boolean.TRUE.equals(stringRedisTemplate.hasKey(key));
 

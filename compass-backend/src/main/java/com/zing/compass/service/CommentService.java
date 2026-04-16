@@ -1,6 +1,7 @@
 package com.zing.compass.service;
 
 import com.alibaba.fastjson2.JSON;
+import com.zing.compass.dto.MerchantDTO;
 import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.Comment;
 import com.zing.compass.entity.UserBehavior;
@@ -13,7 +14,9 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -66,5 +69,27 @@ public class CommentService {
 
 
         return recentComment;
+    }
+
+    public Map<String, Object> getCurrentMerchantCommentPage(Integer pageNo, Integer pageSize) {
+        MerchantDTO currentMerchant = UserHolder.getMerchant();
+        if (currentMerchant == null || currentMerchant.getBizId() == null || currentMerchant.getBizId().isBlank()) {
+            throw new RuntimeException("商家未登录");
+        }
+
+        int safePageNo = (pageNo == null || pageNo < 1) ? 1 : pageNo;
+        int safePageSize = (pageSize == null || pageSize < 1) ? 10 : Math.min(pageSize, 50);
+        int offset = (safePageNo - 1) * safePageSize;
+
+        String bizId = currentMerchant.getBizId();
+        List<Comment> list = commentMapper.selectCommentsByBizIdPage(bizId, offset, safePageSize);
+        Long total = commentMapper.countCommentsByBizId(bizId);
+
+        Map<String, Object> pageData = new HashMap<>();
+        pageData.put("list", list == null ? new ArrayList<>() : list);
+        pageData.put("total", total == null ? 0L : total);
+        pageData.put("pageNo", safePageNo);
+        pageData.put("pageSize", safePageSize);
+        return pageData;
     }
 }

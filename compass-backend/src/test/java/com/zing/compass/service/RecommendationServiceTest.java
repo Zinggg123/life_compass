@@ -52,8 +52,7 @@ class RecommendationServiceTest {
 
     @AfterEach
     void tearDown() {
-        // UserHolder.removeUser(); // Assuming there's a remove method, or just let TL be cleaned up by thread pool if managed, but good practice
-        // UserHolder code didn't show remove method, but it's ThreadLocal.
+        UserHolder.removeUser();
     }
 
     @Test
@@ -116,6 +115,20 @@ class RecommendationServiceTest {
 
         List<SimpleBusiness> result = recommendationService.recommend(pageId);
         
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void recommend_NoLoginUser_NoNpe() {
+        UserHolder.removeUser();
+        String key = "recommend:user:empty";
+
+        when(stringRedisTemplate.hasKey(key)).thenReturn(true);
+        when(listOperations.range(key, 0, 9)).thenReturn(Collections.emptyList());
+
+        List<SimpleBusiness> result = recommendationService.recommend(0);
+
+        assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 }

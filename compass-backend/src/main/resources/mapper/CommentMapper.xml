@@ -26,4 +26,18 @@
         ORDER BY timestamp DESC
         LIMIT #{limit}
     </select>
+
+    <select id="selectCommentsByBizIdPage" resultType="com.zing.compass.entity.Comment">
+        SELECT comment_id, user_id, biz_id, score, content, timestamp
+        FROM comment
+        WHERE biz_id = #{bizId}
+        ORDER BY timestamp DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countCommentsByBizId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM comment
+        WHERE biz_id = #{bizId}
+    </select>
 </mapper>
