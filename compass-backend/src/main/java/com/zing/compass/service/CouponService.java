@@ -1,6 +1,8 @@
 package com.zing.compass.service;
 
 import com.alibaba.fastjson2.JSON;
+import com.zing.compass.dto.MerchantDTO;
+import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.Coupon;
 import com.zing.compass.entity.OrderInfo;
 import com.zing.compass.entity.UserBehavior;
@@ -10,6 +12,7 @@ import com.zing.compass.mapper.CouponMapper;
 import com.zing.compass.mapper.OrderMapper;
 import com.zing.compass.mapper.UserCouponMapper;
 import com.zing.compass.utils.RedisIdWorker;
+import com.zing.compass.utils.UserHolder;
 import com.zing.compass.vo.Result;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
@@ -83,8 +86,25 @@ public class CouponService {
         }
     }
 
+    private String currentUserId() {
+        UserDTO user = UserHolder.getUser();
+        if (user == null) {
+            throw new RuntimeException("用户未登录");
+        }
+        return user.getUserId();
+    }
+
+    private String currentBizId() {
+        MerchantDTO merchant = UserHolder.getMerchant();
+        if (merchant == null) {
+            throw new RuntimeException("商家未登录");
+        }
+        return merchant.getBizId();
+    }
+
     //抢券
-    public boolean grabCoupon(String userId, String couponId) {
+    public boolean grabCoupon(String couponId) {
+        String userId = currentUserId();
         // 1.生成订单ID
         long orderId = redisIdWorker.nextId("order");
         
@@ -248,7 +268,8 @@ public class CouponService {
     }
 
     //检查优惠券是否有效，如果有效返回优惠券信息，否则抛出异常
-    public UserCoupon validateCoupon(String userId, String couponId) {
+    public UserCoupon validateCoupon(String couponId) {
+        String userId = currentUserId();
         //1.检查有无优惠券\优惠券是否属于用户
         UserCoupon userCoupon = userCouponMapper.selectByUserIdAndCouponId(userId, couponId);
         if(userCoupon == null) {
@@ -271,12 +292,13 @@ public class CouponService {
     }
 
     //标记优惠券为已使用
-    public boolean markCouponAsUsed(String userId, String userCouponId) {
+    public boolean markCouponAsUsed(String userCouponId) {
         return userCouponMapper.updateUserCouponStatus(userCouponId, true);
     }
 
     //查询用户优惠券
-    public List<UserCoupon> getUserCoupons(String userId) {
+    public List<UserCoupon> getUserCoupons() {
+        String userId = currentUserId();
         return userCouponMapper.selectCouponsByUserId(userId);
     }
 
@@ -286,7 +308,8 @@ public class CouponService {
     }
 
     //商家发布用户券
-    public void addCoupon(String bizId, Coupon coupon){
+    public void addCoupon(Coupon coupon){
+        String bizId = currentBizId();
         //1.检查商家是否存在
         if(bizId == null || bizMapper.selectBusinessById(bizId) == null){
             throw new RuntimeException("商家不存在");

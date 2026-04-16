@@ -1,6 +1,8 @@
 package com.zing.compass.service;
 
 import com.alibaba.fastjson2.JSON;
+import com.zing.compass.dto.MerchantDTO;
+import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.Business;
 import com.zing.compass.entity.Coupon;
 import com.zing.compass.entity.UserBehavior;
@@ -9,6 +11,7 @@ import com.zing.compass.mapper.BizMapper;
 import com.zing.compass.mapper.CouponMapper;
 import com.zing.compass.mapper.UserCouponMapper;
 import com.zing.compass.utils.RedisIdWorker;
+import com.zing.compass.utils.UserHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,6 +69,8 @@ class CouponServiceTest {
     void setUp() {
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         lenient().when(redisTemplate.opsForList()).thenReturn(listOperations);
+        UserHolder.removeUser();
+        UserHolder.removeMerchant();
     }
 
     @Test
@@ -89,13 +94,14 @@ class CouponServiceTest {
         String userId = "user1";
         String couponId = "coupon1";
         long orderId = 12345L;
+        UserHolder.saveUser(new UserDTO(userId, "name", 0, 0, 0, null));
 
         when(redisIdWorker.nextId("order")).thenReturn(orderId);
         // Script execution returns 0 for success
         when(redisTemplate.execute(any(RedisScript.class), anyList(), any(), any(), any(), any()))
                 .thenReturn(0L);
 
-        boolean result = couponService.grabCoupon(userId, couponId);
+        boolean result = couponService.grabCoupon(couponId);
         assertTrue(result);
     }
 
@@ -103,13 +109,14 @@ class CouponServiceTest {
     void grabCoupon_Fail_StockEmpty() {
         String userId = "user1";
         String couponId = "coupon1";
+        UserHolder.saveUser(new UserDTO(userId, "name", 0, 0, 0, null));
 
         when(redisIdWorker.nextId("order")).thenReturn(12345L);
         // Script execution returns 1 for stock empty
         when(redisTemplate.execute(any(RedisScript.class), anyList(), any(), any(), any(), any()))
                 .thenReturn(1L);
 
-        Exception exception = assertThrows(RuntimeException.class, () -> couponService.grabCoupon(userId, couponId));
+        Exception exception = assertThrows(RuntimeException.class, () -> couponService.grabCoupon(couponId));
         assertEquals("库存不足", exception.getMessage());
     }
 
@@ -117,6 +124,7 @@ class CouponServiceTest {
     void validateCoupon_Success() {
         String userId = "user1";
         String couponId = "coupon1";
+        UserHolder.saveUser(new UserDTO(userId, "name", 0, 0, 0, null));
         UserCoupon uc = new UserCoupon();
         uc.setUserId(userId);
         uc.setCouponId(couponId);
@@ -126,39 +134,41 @@ class CouponServiceTest {
 
         when(userCouponMapper.selectByUserIdAndCouponId(userId, couponId)).thenReturn(uc);
 
-        UserCoupon result = couponService.validateCoupon(userId, couponId);
+        UserCoupon result = couponService.validateCoupon(couponId);
         assertNotNull(result);
         assertEquals(userId, result.getUserId());
     }
 
     @Test
     void validateCoupon_Fail_NotFound() {
+        UserHolder.saveUser(new UserDTO("u1", "name", 0, 0, 0, null));
         when(userCouponMapper.selectByUserIdAndCouponId(anyString(), anyString())).thenReturn(null);
-        assertThrows(IllegalArgumentException.class, () -> couponService.validateCoupon("u1", "c1"));
+        assertThrows(IllegalArgumentException.class, () -> couponService.validateCoupon("c1"));
     }
     
     @Test
     void validateCoupon_Fail_Used() {
+        UserHolder.saveUser(new UserDTO("u1", "name", 0, 0, 0, null));
         UserCoupon uc = new UserCoupon();
         uc.setStatus(true);
         when(userCouponMapper.selectByUserIdAndCouponId(anyString(), anyString())).thenReturn(uc);
-        assertThrows(IllegalArgumentException.class, () -> couponService.validateCoupon("u1", "c1"));
+        assertThrows(IllegalArgumentException.class, () -> couponService.validateCoupon("c1"));
     }
 
     @Test
     void markCouponAsUsed() {
-        String userId = "u1";
         String userCouponId = "uc1";
         when(userCouponMapper.updateUserCouponStatus(userCouponId, true)).thenReturn(true);
-        boolean result = couponService.markCouponAsUsed(userId, userCouponId);
+        boolean result = couponService.markCouponAsUsed(userCouponId);
         assertTrue(result);
     }
 
     @Test
     void getUserCoupons() {
         String userId = "u1";
+        UserHolder.saveUser(new UserDTO(userId, "name", 0, 0, 0, null));
         when(userCouponMapper.selectCouponsByUserId(userId)).thenReturn(new ArrayList<>());
-        List<UserCoupon> result = couponService.getUserCoupons(userId);
+        List<UserCoupon> result = couponService.getUserCoupons();
         assertNotNull(result);
         verify(userCouponMapper).selectCouponsByUserId(userId);
     }
@@ -166,8 +176,9 @@ class CouponServiceTest {
     @Test
     void getBizCoupons() {
         String bizId = "b1";
+        UserHolder.saveMerchant(new MerchantDTO("m1", "m", bizId, null));
         when(couponMapper.selectCouponsByBizId(bizId)).thenReturn(new ArrayList<>());
-        List<Coupon> result = couponService.getBizCoupons(bizId);
+        List<Coupon> result = couponService.getBizCoupons();
         assertNotNull(result);
         verify(couponMapper).selectCouponsByBizId(bizId);
     }
@@ -175,6 +186,7 @@ class CouponServiceTest {
     @Test
     void addCoupon_Success() {
         String bizId = "b1";
+        UserHolder.saveMerchant(new MerchantDTO("m1", "m", bizId, null));
         Coupon coupon = new Coupon();
         coupon.setName("Coupon A");
         coupon.setDiscountAmount(100);
@@ -186,7 +198,7 @@ class CouponServiceTest {
         when(bizMapper.selectBusinessById(bizId)).thenReturn(new Business());
         when(couponMapper.insertCoupon(any(Coupon.class))).thenReturn(1);
 
-        assertDoesNotThrow(() -> couponService.addCoupon(bizId, coupon));
+        assertDoesNotThrow(() -> couponService.addCoupon(coupon));
         
         verify(couponMapper).insertCoupon(any(Coupon.class));
     }
@@ -194,12 +206,13 @@ class CouponServiceTest {
     @Test
     void addCoupon_Fail_MissingName() {
         String bizId = "b1";
+        UserHolder.saveMerchant(new MerchantDTO("m1", "m", bizId, null));
         Coupon coupon = new Coupon();
         // Missing Name
         
         when(bizMapper.selectBusinessById(bizId)).thenReturn(new Business());
         
-        assertThrows(RuntimeException.class, () -> couponService.addCoupon(bizId, coupon));
+        assertThrows(RuntimeException.class, () -> couponService.addCoupon(coupon));
     }
 
     @Test

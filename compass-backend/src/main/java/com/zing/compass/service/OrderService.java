@@ -1,10 +1,12 @@
 package com.zing.compass.service;
 
 import com.alibaba.fastjson2.JSON;
+import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.OrderInfo;
 import com.zing.compass.entity.UserBehavior;
 import com.zing.compass.entity.UserCoupon;
 import com.zing.compass.mapper.OrderMapper;
+import com.zing.compass.utils.UserHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -28,12 +30,18 @@ public class OrderService {
 
     //下单
     public OrderInfo makeOrder(OrderInfo orderInfo) {
+        UserDTO currentUser = UserHolder.getUser();
+        if (currentUser == null) {
+            throw new RuntimeException("用户未登录");
+        }
+
         // 1. 验证优惠券
         String couponId = orderInfo.getCouponId();
-        String userId = orderInfo.getUserId();
-        UserCoupon userCoupon;
+        String userId = currentUser.getUserId();
+        orderInfo.setUserId(userId);
+        UserCoupon userCoupon = null;
         if (couponId != null) {
-            userCoupon = couponService.validateCoupon(userId, couponId);
+            userCoupon = couponService.validateCoupon(couponId);
 
             // 2.校验券的金额和实付金额是否匹配
             if(userCoupon.getThresholdAmount().compareTo(orderInfo.getAmount()) > 0) {
@@ -54,7 +62,7 @@ public class OrderService {
 
         // 4. 标记优惠券已使用
         if (couponId != null) {
-            couponService.markCouponAsUsed(userId, couponId);
+            couponService.markCouponAsUsed(userCoupon.getUserCouponId());
         }
 
         return orderInfo;

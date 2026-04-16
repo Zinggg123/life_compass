@@ -1,7 +1,6 @@
 package com.zing.compass.controller;
 
 import com.zing.compass.dto.UserDTO;
-import com.zing.compass.entity.Coupon;
 import com.zing.compass.entity.User;
 import com.zing.compass.entity.UserCoupon;
 import com.zing.compass.service.CouponService;
@@ -60,9 +59,9 @@ public class UserController {
     }
 
     @PostMapping("/coupons")
-    public Result getCoupons(String userId) {
+    public Result getCoupons() {
         try {
-            List<UserCoupon> coupons = couponService.getUserCoupons(userId);
+            List<UserCoupon> coupons = couponService.getUserCoupons();
             return Result.success("获取用户优惠券成功", coupons);
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());

@@ -16,8 +16,8 @@ public class CommentController {
     private CommentService commentService;
 
     @PostMapping("/add")
-    public Result addComment(String userId, String bizId, Integer score, String content) {
-        boolean success = commentService.addComment(userId, bizId, score, content);
+    public Result addComment(String bizId, Integer score, String content) {
+        boolean success = commentService.addComment(bizId, score, content);
 
         if (success) {
             return Result.success("Comment added successfully");

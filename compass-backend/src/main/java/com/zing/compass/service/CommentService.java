@@ -1,8 +1,10 @@
 package com.zing.compass.service;
 
 import com.alibaba.fastjson2.JSON;
+import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.Comment;
 import com.zing.compass.entity.UserBehavior;
+import com.zing.compass.utils.UserHolder;
 import com.zing.compass.mapper.CommentMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,7 +25,12 @@ public class CommentService {
     //Redis
     private final StringRedisTemplate redisTemplate;
 
-    public boolean addComment(String userId, String bizId, Integer score, String content) {
+    public boolean addComment(String bizId, Integer score, String content) {
+        UserDTO currentUser = UserHolder.getUser();
+        if (currentUser == null) {
+            throw new RuntimeException("用户未登录");
+        }
+        String userId = currentUser.getUserId();
         String commentId = UUID.randomUUID().toString();
         Comment comment = new Comment(commentId, userId, bizId, score, content, LocalDateTime.now());
 

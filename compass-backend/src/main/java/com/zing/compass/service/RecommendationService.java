@@ -31,6 +31,9 @@ public class RecommendationService {
         String userId = UserHolder.getUser().getUserId();
 
         String key = "recommend:user:" + userId;
+        if(userId == null){
+            key = "recommend:user:empty";
+        }
         boolean hasKey = Boolean.TRUE.equals(stringRedisTemplate.hasKey(key));
 
         if(!hasKey){

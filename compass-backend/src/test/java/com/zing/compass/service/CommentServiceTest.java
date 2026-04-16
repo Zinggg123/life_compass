@@ -1,9 +1,11 @@
 package com.zing.compass.service;
 
 import com.alibaba.fastjson2.JSON;
+import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.Comment;
 import com.zing.compass.entity.UserBehavior;
 import com.zing.compass.mapper.CommentMapper;
+import com.zing.compass.utils.UserHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,26 +41,28 @@ class CommentServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(redisTemplate.opsForList()).thenReturn(listOperations);
+        UserHolder.removeUser();
     }
 
     @Test
     void addComment_Success() {
-        String userId = "u1";
+        UserHolder.saveUser(new UserDTO("u1", "name", 0, 0, 0, null));
         String bizId = "b1";
         Integer score = 5;
         String content = "Good!";
 
         when(commentMapper.insertComment(any(Comment.class))).thenReturn(1);
 
-        boolean result = commentService.addComment(userId, bizId, score, content);
+        boolean result = commentService.addComment(bizId, score, content);
         assertTrue(result);
         verify(commentMapper).insertComment(any(Comment.class));
     }
 
     @Test
     void addComment_Fail() {
+        UserHolder.saveUser(new UserDTO("u1", "name", 0, 0, 0, null));
         when(commentMapper.insertComment(any(Comment.class))).thenReturn(0);
-        assertFalse(commentService.addComment("u1", "b1", 5, "ok"));
+        assertFalse(commentService.addComment("b1", 5, "ok"));
     }
 
     @Test

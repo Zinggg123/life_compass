@@ -2,7 +2,6 @@ package com.zing.compass.controller;
 
 import com.zing.compass.entity.Coupon;
 import com.zing.compass.service.CouponService;
-import com.zing.compass.utils.UserHolder;
 import com.zing.compass.vo.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,16 +34,15 @@ public class BusinessController {
 
     @PostMapping("/addCoupon")
     public Result addCoupon(@RequestBody Coupon couponInfo) {
-        String bizId = UserHolder.getMerchant() == null ? null : UserHolder.getMerchant().getBizId();
         try {
-            log.debug("新增优惠券请求 bizId={}, couponName={}", bizId, couponInfo == null ? null : couponInfo.getName());
-            couponService.addCoupon(bizId, couponInfo);
+            log.debug("新增优惠券请求 couponName={}", couponInfo == null ? null : couponInfo.getName());
+            couponService.addCoupon(couponInfo);
             return Result.success("添加商家优惠券成功", null);
         } catch (RuntimeException e) {
-            log.warn("新增优惠券失败 bizId={}, reason={}", bizId, e.getMessage());
+            log.warn("新增优惠券失败 reason={}", e.getMessage());
             return Result.failure(e.getMessage());
         } catch (Exception e){
-            log.error("新增优惠券异常 bizId={}", bizId, e);
+            log.error("新增优惠券异常", e);
             return Result.error("An unexpected error occurred");
         }
     }

@@ -1,10 +1,12 @@
 package com.zing.compass.service;
 
 import com.alibaba.fastjson2.JSON;
+import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.OrderInfo;
 import com.zing.compass.entity.UserBehavior;
 import com.zing.compass.entity.UserCoupon;
 import com.zing.compass.mapper.OrderMapper;
+import com.zing.compass.utils.UserHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,12 +42,13 @@ class OrderServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(redisTemplate.opsForList()).thenReturn(listOperations);
+        UserHolder.removeUser();
     }
 
     @Test
     void makeOrder_Success_NoCoupon() {
+        UserHolder.saveUser(new UserDTO("u1", "name", 0, 0, 0, null));
         OrderInfo orderInfo = new OrderInfo();
-        orderInfo.setUserId("u1");
         orderInfo.setAmount(100);
         orderInfo.setAmountPaid(100);
 
@@ -55,38 +58,39 @@ class OrderServiceTest {
 
         assertNotNull(result.getOrderId());
         verify(orderMapper).insertOrder(orderInfo);
-        verify(couponService, never()).validateCoupon(anyString(), anyString());
+        verify(couponService, never()).validateCoupon(anyString());
     }
 
     @Test
     void makeOrder_Success_WithCoupon() {
         String userId = "u1";
         String couponId = "c1";
+        UserHolder.saveUser(new UserDTO(userId, "name", 0, 0, 0, null));
         OrderInfo orderInfo = new OrderInfo();
-        orderInfo.setUserId(userId);
         orderInfo.setCouponId(couponId);
         orderInfo.setAmount(100);
         orderInfo.setAmountPaid(90); // 10 discount
 
         UserCoupon uc = new UserCoupon();
+        uc.setUserCouponId("uc1");
         uc.setThresholdAmount(50);
         uc.setDiscountAmount(10);
 
-        when(couponService.validateCoupon(userId, couponId)).thenReturn(uc);
+        when(couponService.validateCoupon(couponId)).thenReturn(uc);
         when(orderMapper.insertOrder(any(OrderInfo.class))).thenReturn(1);
 
         OrderInfo result = orderService.makeOrder(orderInfo);
 
         assertNotNull(result.getOrderId());
-        verify(couponService).markCouponAsUsed(userId, couponId);
+        verify(couponService).markCouponAsUsed("uc1");
     }
 
     @Test
     void makeOrder_Fail_ThresholdNotMet() {
         String userId = "u1";
         String couponId = "c1";
+        UserHolder.saveUser(new UserDTO(userId, "name", 0, 0, 0, null));
         OrderInfo orderInfo = new OrderInfo();
-        orderInfo.setUserId(userId);
         orderInfo.setCouponId(couponId);
         orderInfo.setAmount(40); // Less than 50
         orderInfo.setAmountPaid(30);
@@ -95,7 +99,7 @@ class OrderServiceTest {
         uc.setThresholdAmount(50);
         uc.setDiscountAmount(10);
 
-        when(couponService.validateCoupon(userId, couponId)).thenReturn(uc);
+        when(couponService.validateCoupon(couponId)).thenReturn(uc);
 
         assertThrows(IllegalArgumentException.class, () -> orderService.makeOrder(orderInfo));
     }
@@ -104,8 +108,8 @@ class OrderServiceTest {
     void makeOrder_Fail_DiscountMismatch() {
         String userId = "u1";
         String couponId = "c1";
+        UserHolder.saveUser(new UserDTO(userId, "name", 0, 0, 0, null));
         OrderInfo orderInfo = new OrderInfo();
-        orderInfo.setUserId(userId);
         orderInfo.setCouponId(couponId);
         orderInfo.setAmount(100); 
         orderInfo.setAmountPaid(95); // 5 discount, but coupon is 10
@@ -114,7 +118,7 @@ class OrderServiceTest {
         uc.setThresholdAmount(50);
         uc.setDiscountAmount(10);
 
-        when(couponService.validateCoupon(userId, couponId)).thenReturn(uc);
+        when(couponService.validateCoupon(couponId)).thenReturn(uc);
 
         assertThrows(IllegalArgumentException.class, () -> orderService.makeOrder(orderInfo));
     }
