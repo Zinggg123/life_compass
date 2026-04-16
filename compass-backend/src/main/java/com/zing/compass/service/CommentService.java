@@ -57,7 +57,6 @@ public class CommentService {
             redisTemplate.expire(key, 24, TimeUnit.HOURS); //设置过期时间
         }
 
-        System.out.println(recentComment.toString());
 
         return recentComment;
     }

@@ -3,6 +3,7 @@ package com.zing.compass.service;
 import com.zing.compass.entity.SimpleBusiness;
 import com.zing.compass.utils.UserHolder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 //推荐服务，提供个性化推荐功能
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RecommendationService {
 
     private final StringRedisTemplate stringRedisTemplate;
@@ -57,7 +59,7 @@ public class RecommendationService {
             return new ArrayList<>();
         }
 
-        System.out.println("推荐的店铺ID列表(Page " + pageId + "): " + pageBizIds.toString());
+        log.debug("推荐结果分页 userId={}, pageId={}, bizCount={}", userId, pageId, pageBizIds.size());
 
         //3.根据推荐的店铺ID列表查询店铺详情并返回
         return bizService.getSimpleBusinessesByIds(pageBizIds);

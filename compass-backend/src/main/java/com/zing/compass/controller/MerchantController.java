@@ -5,14 +5,12 @@ import com.zing.compass.service.MerchantService;
 import com.zing.compass.vo.LoginRequest;
 import com.zing.compass.vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 //商家（人）和商户（店）是不同的概念
+@CrossOrigin
 @RestController
 @RequestMapping("/merchant")
 public class MerchantController {

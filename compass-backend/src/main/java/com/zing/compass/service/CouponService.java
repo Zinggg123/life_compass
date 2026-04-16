@@ -153,7 +153,7 @@ public class CouponService {
                     redisTemplate.opsForStream().acknowledge(queueName, "g1", record.getId()); //消息id
                     
                 } catch (Exception e) {
-                    // log.error("Processing error", e);
+                    log.error("处理优惠券订单消息失败，开始处理pending-list", e);
                     handlePendingList();
                 }
             }
@@ -175,11 +175,12 @@ public class CouponService {
                     String userId = (String) value.get("userId");
                     String cId = (String) value.get("voucherId");
                     String orderId = (String) value.get("id");
-                    System.out.println("Processing pending order: " + orderId+", "+ userId + ", " + cId);
+                    log.warn("处理pending-list订单 orderId={}, userId={}, couponId={}", orderId, userId, cId);
                     handleVoucherOrder(userId, cId, orderId);
                     
                     redisTemplate.opsForStream().acknowledge(queueName, "g1", record.getId());
                 } catch (Exception e) {
+                    log.error("处理pending-list失败", e);
                     break;
                 }
             }
@@ -192,7 +193,7 @@ public class CouponService {
         if(!isLock){
             //获取锁失败
             //TODO：处理
-            System.out.println("获取锁失败");
+            log.warn("获取用户领券锁失败 userId={}, couponId={}, orderId={}", userId, couponId, orderId);
             return;
         }
         try {
@@ -350,6 +351,8 @@ public class CouponService {
         if (CollectionUtils.isEmpty(coupons)) {
             return;
         }
+
+        int loadedCount = 0;
         
         for (Coupon coupon : coupons) {
             // Check if already loaded
@@ -357,8 +360,12 @@ public class CouponService {
             Boolean hasKey = redisTemplate.hasKey(key);
             if (!hasKey) {
                 addSeckillVoucher(coupon.getCouponId());
-                System.out.println("Loaded voucher: " + coupon.getCouponId());
+                loadedCount++;
             }
+        }
+
+        if (loadedCount > 0) {
+            log.info("优惠券预热完成 loadedCount={}", loadedCount);
         }
     }
     
@@ -379,7 +386,7 @@ public class CouponService {
             keysToDelete.add("seckill:endTime:" + id);
         }
         redisTemplate.delete(keysToDelete);
-        System.out.println("Cleaned expired vouchers: " + expiredIds.size());
+        log.info("清理过期优惠券缓存完成 expiredCount={}", expiredIds.size());
     }
 
     //获取近期领取优惠券记录

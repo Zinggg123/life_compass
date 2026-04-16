@@ -3,10 +3,10 @@ package com.zing.compass.service;
 import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.User;
 import com.zing.compass.mapper.UserMapper;
+import com.zing.compass.utils.UserHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
 
 import com.alibaba.fastjson2.JSON;
 
@@ -112,12 +112,12 @@ public class UserService {
         return hexString.toString();
     }
 
-    //获取用户信息
-    public User getUserInfo(String userId) {
-        User user = userMapper.selectUserById(userId);
-        if(user == null){
-            throw new RuntimeException("用户不存在");
+    // 获取当前登录用户信息（从ThreadLocal读取，不再查库）
+    public UserDTO getUserInfo() {
+        UserDTO currentUser = UserHolder.getUser();
+        if (currentUser == null) {
+            throw new RuntimeException("用户未登录");
         }
-        return user;
+        return currentUser;
     }
 }

@@ -3,10 +3,12 @@ package com.zing.compass.controller;
 import com.zing.compass.service.CommentService;
 import com.zing.compass.vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/comment")
 public class CommentController {

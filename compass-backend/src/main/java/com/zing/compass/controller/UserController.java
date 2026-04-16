@@ -1,5 +1,6 @@
 package com.zing.compass.controller;
 
+import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.Coupon;
 import com.zing.compass.entity.User;
 import com.zing.compass.entity.UserCoupon;
@@ -10,15 +11,13 @@ import com.zing.compass.vo.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
+@CrossOrigin
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
@@ -51,9 +50,9 @@ public class UserController {
     }
 
     @PostMapping("/getInfo")
-    public Result getUserInfo(String userId) {
+    public Result getUserInfo() {
         try {
-            User user = userService.getUserInfo(userId);
+            UserDTO user = userService.getUserInfo();
             return Result.success(user);
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());

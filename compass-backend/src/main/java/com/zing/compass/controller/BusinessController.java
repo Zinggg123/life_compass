@@ -1,21 +1,19 @@
 package com.zing.compass.controller;
 
-import com.zing.compass.entity.Business;
 import com.zing.compass.entity.Coupon;
-import com.zing.compass.service.BizService;
 import com.zing.compass.service.CouponService;
 import com.zing.compass.utils.UserHolder;
 import com.zing.compass.vo.Result;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/business")
+@Slf4j
 public class BusinessController {
     @Autowired
     private CouponService couponService;
@@ -27,21 +25,26 @@ public class BusinessController {
             List<Coupon> coupons = couponService.getBizCoupons(bizId);
             return Result.success("获取商家优惠券成功", coupons);
         } catch (RuntimeException e) {
+            log.warn("查询商家优惠券失败 bizId={}, reason={}", bizId, e.getMessage());
             return Result.error(e.getMessage());
         } catch (Exception e) {
+            log.error("查询商家优惠券异常 bizId={}", bizId, e);
             return Result.error("An unexpected error occurred");
         }
     }
 
     @PostMapping("/addCoupon")
     public Result addCoupon(@RequestBody Coupon couponInfo) {
+        String bizId = UserHolder.getMerchant() == null ? null : UserHolder.getMerchant().getBizId();
         try {
-            System.out.println("CouponInfo: "+couponInfo.toString());
-            couponService.addCoupon(UserHolder.getMerchant().getBizId(), couponInfo);
+            log.debug("新增优惠券请求 bizId={}, couponName={}", bizId, couponInfo == null ? null : couponInfo.getName());
+            couponService.addCoupon(bizId, couponInfo);
             return Result.success("添加商家优惠券成功", null);
         } catch (RuntimeException e) {
+            log.warn("新增优惠券失败 bizId={}, reason={}", bizId, e.getMessage());
             return Result.failure(e.getMessage());
         } catch (Exception e){
+            log.error("新增优惠券异常 bizId={}", bizId, e);
             return Result.error("An unexpected error occurred");
         }
     }

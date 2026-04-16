@@ -3,6 +3,7 @@ package com.zing.compass.service;
 import com.zing.compass.dto.UserDTO;
 import com.zing.compass.entity.User;
 import com.zing.compass.mapper.UserMapper;
+import com.zing.compass.utils.UserHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +42,7 @@ class UserServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(redisTemplate.opsForHash()).thenReturn(hashOperations);
+        UserHolder.removeUser();
     }
 
     @Test
@@ -126,18 +128,18 @@ class UserServiceTest {
 
     @Test
     void getUserInfo_Success() {
-        User user = new User();
+        UserDTO user = new UserDTO();
         user.setUserId("u1");
-        when(userMapper.selectUserById("u1")).thenReturn(user);
+        UserHolder.saveUser(user);
 
-        User result = userService.getUserInfo("u1");
+        UserDTO result = userService.getUserInfo();
         assertEquals("u1", result.getUserId());
     }
 
     @Test
     void getUserInfo_Fail() {
-        when(userMapper.selectUserById("u1")).thenReturn(null);
-        assertThrows(RuntimeException.class, () -> userService.getUserInfo("u1"));
+        UserHolder.removeUser();
+        assertThrows(RuntimeException.class, () -> userService.getUserInfo());
     }
 
     private String sha256(String input) {

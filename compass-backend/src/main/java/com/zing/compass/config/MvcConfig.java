@@ -23,7 +23,8 @@ public class MvcConfig implements WebMvcConfigurer {
                         "/user/register",
                         "/merchant/login",
                         "/merchant/register",
-                        "/recommend" // Adding recommend as likely public or safe to default open
+                        "/business/getCoupons",
+                        "/test"
                 ).order(1);
         // Token刷新拦截器
         registry.addInterceptor(new RefreshTokenInterceptor(stringRedisTemplate)).addPathPatterns("/**").order(0);
